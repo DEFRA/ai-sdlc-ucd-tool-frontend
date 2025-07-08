@@ -1,0 +1,109 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+---
+description: Playwright Testing
+globs: tests/*.js
+---
+# Playwright Testing Rules
+
+## Testing Philosophy
+- Focus on user-visible behavior and outcomes rather than internal implementation details.
+- Keep tests isolated, independent, and reflective of end-to-end user journeys.
+- Test server-rendered content and interactive behaviors from a user's perspective.
+- Ensure tests remain robust by avoiding strict mode locator violations through specific and scoped selectors.
+
+## Testing Strategy
+
+### Element Scoping and Selectors
+- Always scope element checks to their containing parent to avoid matching multiple elements.
+- Use relative selectors and `:has()` filters to narrow down to specific instances (e.g., table rows, details components).
+- Refine selectors with regex for whitespace and exact text when needed.
+- Avoid global page-level selectors for nested elements.
+
+#### Selector Priority
+1. Role-based selectors with exact text, e.g., `getByRole('button', { name: 'Submit', exact: true })`
+2. ARIA label selectors, e.g., `getByLabel('Search')`
+3. Component-specific class selectors with context filtering, e.g., `locator('.govuk-details__summary-text', { hasText: /Summary Text/ })`
+4. Scoped locators using `:has()` and `filter()` for parent-child relationships.
+5. Generic text matching as the last resort, e.g., `getByText('Content')`
+
+### State and Interaction Testing
+- Verify both initial and changed states of interactive components.
+- Test interactive behaviors like clicking to expand/collapse a details component and verify resulting state changes (e.g., checking for the `open` attribute).
+- Test keyboard interactions, attribute changes, and error states.
+- Ensure tests cover both default views and dynamic transitions.
+
+## Test Structure
+- Place tests in the `/tests` directory with a `.spec.js` extension.
+- Group related tests using `test.describe()`.
+- Use `test.beforeEach()` for common setup steps.
+- Write clear, descriptive test names (e.g., "should display error message when API fails").
+- Always use ES Module syntax with named imports (e.g. `import { test, expect } from '@playwright/test';`).
+
+## GDS Component Testing
+
+### Common GDS Component Selectors
+- **Details Component:**
+  ```javascript
+  // Target summary text within a details component
+  page.locator('span.govuk-details__summary-text', { hasText: /Summary Text/ });
+  // Target content within the details component
+  page.locator('div.govuk-details__text').filter({ hasText: /Content Text/ });
+  ```
+- **Table Component:**
+  ```javascript
+  // Target table by accessible caption or role
+  page.getByRole('table', { name: 'Caption Text' });
+  // Target a specific row using role and text
+  page.getByRole('row', { name: 'Row Content' });
+  // Use scoped selectors within a row
+  const row = page.getByRole('row', { name: 'Row Content' });
+  row.locator('.govuk-tag');
+  ```
+- **Tags:**
+  ```javascript
+  // Target a tag with specific text
+  page.locator('.govuk-tag', { hasText: 'Tag Text' });
+  // Verify tag color variants with regex matching
+  await expect(tag).toHaveClass(/govuk-tag--blue/);
+  await expect(tag).toHaveClass(/govuk-tag--green/);
+  await expect(tag).toHaveClass(/govuk-tag--red/);
+  ```
+- **Buttons:**
+  ```javascript
+  page.getByRole('button', { name: 'Button Text' });
+  ```
+
+### GDS Component Testing Patterns
+- **Details Component:**
+  - Test summary text visibility.
+  - Test expand/collapse functionality by clicking the summary and asserting the open attribute.
+  - Verify that the expanded content renders the expected text.
+  - Include keyboard accessibility tests.
+- **Tables:**
+  - Verify the presence of captions, headers, and cell content.
+  - Check responsive behavior using scoped selectors for rows.
+- **Form Components:**
+  - Test validation messages and error summaries.
+  - Verify correct display of hint texts and input states.
+
+### Accessibility Testing
+- Integrate axe-core (e.g., using `@axe-core/playwright`) to run automated accessibility scans.
+- Test keyboard navigation flows and focus management.
+- Verify that screen reader announcements are correct.
+- Check for meeting color contrast standards and proper ARIA attributes.
+- Example:
+  ```javascript
+  import AxeBuilder from '@axe-core/playwright';
+  const results = await new AxeBuilder({ page }).analyze();
+  expect(results.violations).toEqual([]);
+  ```
+
+### Server-Side Testing Considerations
+- Test complete user journeys including form submissions, redirects, and session handling.
+- Verify that server-rendered content is correct.
+- Include tests for error pages and status codes.
+- Ensure that navigation flows are smooth and predictable across the application.

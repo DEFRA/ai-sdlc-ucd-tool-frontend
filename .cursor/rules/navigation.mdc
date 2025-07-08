@@ -1,0 +1,137 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+---
+description: Navigation Standards
+globs: src/config/nunjucks/context/*.js, src/views/layouts/*.njk
+---
+# Navigation Standards
+
+## Navigation Configuration
+
+Navigation items should be managed through the `buildNavigation` helper function:
+
+```javascript
+// src/config/nunjucks/context/build-navigation.js
+export function buildNavigation(request) {
+  return [
+    {
+      text: 'Menu Item',
+      url: '/path',
+      isActive: request?.path?.startsWith('/path')
+    }
+  ]
+}
+```
+
+## Key Components
+
+1. **Navigation Items Structure**
+   - text: Display text for the menu item
+   - url: URL path for the menu item
+   - isActive: Function to determine active state
+   
+2. **Active State**
+   - Use `startsWith()` for paths with sub-pages
+   - Handle null/undefined paths with optional chaining
+   - Match exact paths for single-page items
+
+## Implementation Steps
+
+1. Update `buildNavigation.js`:
+   - Add new navigation items
+   - Define active state logic
+   - Maintain order based on information architecture
+
+2. Add corresponding routes in `base.js` or feature-specific route files:
+   ```javascript
+   {
+     method: 'GET',
+     path: '/new-path',
+     handler: (request, h) => {
+       return h.view('view-name', {
+         currentPath: request.path
+       });
+     }
+   }
+   ```
+
+3. Create view templates for new navigation items:
+   ```nunjucks
+   {% extends "layouts/layout.njk" %}
+   {% block content %}
+     {# Page content here #}
+   {% endblock %}
+   ```
+
+## Testing
+
+1. Update `build-navigation.test.js` when adding new items:
+   ```javascript
+   test('should mark new item as active when on its path', () => {
+     const request = { path: '/new-path' }
+     const nav = buildNavigation(request)
+     expect(nav[index].isActive).toBe(true)
+   })
+   ```
+
+2. Add Playwright tests for navigation behavior:
+   ```javascript
+   test('should navigate to new page when clicking menu item', async ({ page }) => {
+     await page.click('text=Menu Item')
+     await expect(page).toHaveURL('/new-path')
+   })
+   ```
+
+## Best Practices
+
+1. **Consistency**
+   - Follow GDS navigation patterns
+   - Use consistent naming conventions
+   - Maintain logical grouping of items
+
+2. **Accessibility**
+   - Ensure keyboard navigation works
+   - Maintain clear active states
+   - Follow ARIA best practices
+
+3. **Maintenance**
+   - Keep navigation items in sync with routes
+   - Document any special navigation logic
+   - Test all navigation paths
+
+## Common Patterns
+
+1. **Sub-Navigation**
+   ```javascript
+   {
+     text: 'Parent',
+     url: '/parent',
+     isActive: request?.path?.startsWith('/parent'),
+     items: [
+       {
+         text: 'Child',
+         url: '/parent/child',
+         isActive: request?.path === '/parent/child'
+       }
+     ]
+   }
+   ```
+
+2. **Conditional Navigation**
+   ```javascript
+   {
+     text: 'Admin',
+     url: '/admin',
+     isActive: request?.path?.startsWith('/admin'),
+     show: request?.auth?.isAdmin
+   }
+   ```
+
+## Error Handling
+
+- Handle undefined/null request objects
+- Validate navigation item properties
+- Log navigation errors appropriately 
