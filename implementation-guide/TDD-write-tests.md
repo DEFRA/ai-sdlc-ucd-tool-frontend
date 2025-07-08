@@ -32,6 +32,8 @@ Write failing tests for each BDD scenario:
 - Add minimal function stubs for compilation (no implementation)
 - Ensure tests fail as expected
 
+Do not add comments to reference the story name or number
+
 ### 3. Code Validation
 
 - Run tests to confirm they fail

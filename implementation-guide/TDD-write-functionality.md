@@ -29,6 +29,8 @@ For each failing test:
 - Follow BDD requirements exactly
 - Avoid over-engineering or additional features
 
+Do not add comments to reference the story name or number
+
 ### 3. Test Confirmation
 
 - Run tests to verify all pass
