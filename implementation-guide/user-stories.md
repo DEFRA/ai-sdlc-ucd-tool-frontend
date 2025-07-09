@@ -39,3 +39,10 @@ Implement logout route that clears session cookies, removes Redis sessions, and 
 **Story 1.10**: **Error Handling and User Feedback** **Description**:
 Create comprehensive error handling for all authentication scenarios including Azure AD errors, network failures, and session issues. Implement user-friendly error pages with Nunjucks templates and appropriate logging for debugging.
 **Integration**: Wraps all previous stories with proper error boundaries, providing graceful degradation and clear user communication throughout the authentication flow implemented in stories 1.4 through 1.9.
+
+**Extra stories from refactor suggestions**
+Implement Connection Pooling:
+
+- Create a singleton Redis connection manager
+- Reuse connections across requests
+- Add proper connection lifecycle management

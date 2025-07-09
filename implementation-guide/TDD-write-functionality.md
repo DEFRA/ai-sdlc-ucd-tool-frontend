@@ -13,7 +13,7 @@ Confirm you have read the content of the documents, then continue...
 
 ## Story Implementation
 
-For 1.1:
+For 1.2:
 
 ### 1. Test Validation
 

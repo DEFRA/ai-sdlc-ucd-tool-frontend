@@ -1,0 +1,265 @@
+{% extends "layouts/page.njk" %}
+
+{% block content %}
+<div class="govuk-width-container">
+  <main class="govuk-main-wrapper">
+    <div class="govuk-grid-row">
+      <div class="govuk-grid-column-two-thirds">
+        <h1 class="govuk-heading-xl">Session Store Test Interface</h1>
+        <p class="govuk-body">This interface allows you to test the Redis Session Store functionality for Story 1.2.</p>
+        
+        <div class="govuk-form-group">
+          <label class="govuk-label govuk-label--s" for="session-id">Session ID</label>
+          <input class="govuk-input" id="session-id" name="session-id" type="text" data-testid="session-id-input" placeholder="Enter session ID">
+        </div>
+        
+        <div class="govuk-form-group">
+          <label class="govuk-label govuk-label--s" for="user-id">User ID</label>
+          <input class="govuk-input" id="user-id" name="user-id" type="text" data-testid="user-id-input" placeholder="Enter user ID">
+        </div>
+        
+        <div class="govuk-form-group">
+          <label class="govuk-label govuk-label--s" for="access-token">Access Token</label>
+          <textarea class="govuk-textarea" id="access-token" name="access-token" rows="3" data-testid="access-token-input" placeholder="Enter access token"></textarea>
+        </div>
+        
+        <div class="govuk-form-group">
+          <label class="govuk-label govuk-label--s" for="refresh-token">Refresh Token</label>
+          <textarea class="govuk-textarea" id="refresh-token" name="refresh-token" rows="3" data-testid="refresh-token-input" placeholder="Enter refresh token"></textarea>
+        </div>
+        
+        <div class="govuk-button-group">
+          <button type="button" class="govuk-button" data-testid="create-session-btn">Create Session</button>
+          <button type="button" class="govuk-button govuk-button--secondary" data-testid="get-session-btn">Get Session</button>
+          <button type="button" class="govuk-button govuk-button--secondary" data-testid="update-session-btn">Update Session</button>
+          <button type="button" class="govuk-button govuk-button--warning" data-testid="delete-session-btn">Delete Session</button>
+        </div>
+        
+        <div class="govuk-button-group">
+          <button type="button" class="govuk-button govuk-button--secondary" data-testid="check-exists-btn">Check Exists</button>
+          <button type="button" class="govuk-button govuk-button--secondary" data-testid="get-ttl-btn">Get TTL</button>
+          <button type="button" class="govuk-button govuk-button--secondary" data-testid="refresh-ttl-btn">Refresh TTL</button>
+        </div>
+        
+        <div class="govuk-button-group">
+          <button type="button" class="govuk-button govuk-button--secondary" data-testid="simulate-redis-error-btn">Simulate Redis Error</button>
+          <button type="button" class="govuk-button govuk-button--secondary" data-testid="concurrent-updates-btn">Concurrent Updates</button>
+          <button type="button" class="govuk-button govuk-button--secondary" data-testid="simulate-expiry-btn">Simulate Expiry</button>
+        </div>
+        
+        <div class="govuk-form-group">
+          <h2 class="govuk-heading-m">Result</h2>
+          <div class="govuk-inset-text" data-testid="session-result" id="session-result">
+            No operations performed yet.
+          </div>
+        </div>
+        
+        <div class="govuk-form-group">
+          <h2 class="govuk-heading-m">Session Data</h2>
+          <div class="govuk-inset-text" data-testid="session-data" id="session-data">
+            No session data retrieved yet.
+          </div>
+        </div>
+      </div>
+      
+      <div class="govuk-grid-column-one-third">
+        <h2 class="govuk-heading-m">Test Instructions</h2>
+        <div class="govuk-inset-text">
+          <p class="govuk-body-s"><strong>1. Create Session:</strong> Enter session ID, user ID, and tokens, then click "Create Session"</p>
+          <p class="govuk-body-s"><strong>2. Get Session:</strong> Enter session ID and click "Get Session" to retrieve data</p>
+          <p class="govuk-body-s"><strong>3. Update Session:</strong> Modify token fields and click "Update Session"</p>
+          <p class="govuk-body-s"><strong>4. Delete Session:</strong> Click "Delete Session" to remove the session</p>
+          <p class="govuk-body-s"><strong>5. Check Exists:</strong> Verify if a session exists in Redis</p>
+          <p class="govuk-body-s"><strong>6. TTL Operations:</strong> Get and refresh session expiry times</p>
+          <p class="govuk-body-s"><strong>7. Error Testing:</strong> Test error handling scenarios</p>
+        </div>
+        
+        <h3 class="govuk-heading-s">Expected Session Data Structure</h3>
+        <pre class="govuk-body-s" style="background: #f3f2f1; padding: 10px; font-family: monospace;">
+{
+  "user_id": "unique identifier",
+  "access_token": "JWT token",
+  "refresh_token": "refresh token",
+  "token_expiry": "timestamp"
+}
+        </pre>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const sessionIdInput = document.getElementById('session-id');
+  const userIdInput = document.getElementById('user-id');
+  const accessTokenInput = document.getElementById('access-token');
+  const refreshTokenInput = document.getElementById('refresh-token');
+  const sessionResult = document.getElementById('session-result');
+  const sessionData = document.getElementById('session-data');
+  
+  function updateResult(message) {
+    sessionResult.textContent = message;
+  }
+  
+  function updateSessionData(data) {
+    if (data && data.sessionData) {
+      const formatted = `User ID: ${data.sessionData.user_id}
+Access Token: ${data.sessionData.access_token}
+Refresh Token: ${data.sessionData.refresh_token}
+Token Expiry: ${new Date(data.sessionData.token_expiry).toLocaleString()}`;
+      sessionData.textContent = formatted;
+    } else {
+      sessionData.textContent = 'No session data available';
+    }
+  }
+  
+  async function makeRequest(url, method = 'GET', body = null) {
+    const options = {
+      method,
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    };
+    
+    if (body) {
+      options.body = JSON.stringify(body);
+    }
+    
+    try {
+      const response = await fetch(url, options);
+      return await response.json();
+    } catch (error) {
+      return { success: false, message: `Network error: ${error.message}` };
+    }
+  }
+  
+  // Create Session
+  document.querySelector('[data-testid="create-session-btn"]').addEventListener('click', async function() {
+    const sessionId = sessionIdInput.value;
+    const userId = userIdInput.value;
+    const accessToken = accessTokenInput.value;
+    const refreshToken = refreshTokenInput.value;
+    
+    if (!sessionId || !userId || !accessToken || !refreshToken) {
+      updateResult('Error: Invalid session data: missing required fields');
+      return;
+    }
+    
+    const result = await makeRequest('/test-session-store/create', 'POST', {
+      sessionId,
+      userId,
+      accessToken,
+      refreshToken
+    });
+    
+    updateResult(result.message);
+  });
+  
+  // Get Session
+  document.querySelector('[data-testid="get-session-btn"]').addEventListener('click', async function() {
+    const sessionId = sessionIdInput.value;
+    
+    if (!sessionId) {
+      updateResult('Error: Session ID is required');
+      return;
+    }
+    
+    const result = await makeRequest(`/test-session-store/${sessionId}`);
+    updateResult(result.message);
+    updateSessionData(result);
+  });
+  
+  // Update Session
+  document.querySelector('[data-testid="update-session-btn"]').addEventListener('click', async function() {
+    const sessionId = sessionIdInput.value;
+    const userId = userIdInput.value;
+    const accessToken = accessTokenInput.value;
+    const refreshToken = refreshTokenInput.value;
+    
+    if (!sessionId || !userId || !accessToken || !refreshToken) {
+      updateResult('Error: Invalid session data: missing required fields');
+      return;
+    }
+    
+    const result = await makeRequest(`/test-session-store/${sessionId}`, 'PUT', {
+      userId,
+      accessToken,
+      refreshToken
+    });
+    
+    updateResult(result.message);
+  });
+  
+  // Delete Session
+  document.querySelector('[data-testid="delete-session-btn"]').addEventListener('click', async function() {
+    const sessionId = sessionIdInput.value;
+    
+    if (!sessionId) {
+      updateResult('Error: Session ID is required');
+      return;
+    }
+    
+    const result = await makeRequest(`/test-session-store/${sessionId}`, 'DELETE');
+    updateResult(result.message);
+    sessionData.textContent = 'Session deleted - no data available';
+  });
+  
+  // Check Exists
+  document.querySelector('[data-testid="check-exists-btn"]').addEventListener('click', async function() {
+    const sessionId = sessionIdInput.value;
+    
+    if (!sessionId) {
+      updateResult('Error: Session ID is required');
+      return;
+    }
+    
+    const result = await makeRequest(`/test-session-store/${sessionId}/exists`);
+    updateResult(result.message);
+  });
+  
+  // Get TTL
+  document.querySelector('[data-testid="get-ttl-btn"]').addEventListener('click', async function() {
+    const sessionId = sessionIdInput.value;
+    
+    if (!sessionId) {
+      updateResult('Error: Session ID is required');
+      return;
+    }
+    
+    const result = await makeRequest(`/test-session-store/${sessionId}/ttl`);
+    updateResult(result.message);
+  });
+  
+  // Refresh TTL
+  document.querySelector('[data-testid="refresh-ttl-btn"]').addEventListener('click', async function() {
+    const sessionId = sessionIdInput.value;
+    
+    if (!sessionId) {
+      updateResult('Error: Session ID is required');
+      return;
+    }
+    
+    const result = await makeRequest(`/test-session-store/${sessionId}/refresh-ttl`, 'POST');
+    updateResult(result.message);
+  });
+  
+  // Simulate Redis Error
+  document.querySelector('[data-testid="simulate-redis-error-btn"]').addEventListener('click', async function() {
+    const result = await makeRequest('/test-session-store/simulate-redis-error', 'POST');
+    updateResult(result.message);
+  });
+  
+  // Concurrent Updates
+  document.querySelector('[data-testid="concurrent-updates-btn"]').addEventListener('click', async function() {
+    const result = await makeRequest('/test-session-store/simulate-concurrent-updates', 'POST');
+    updateResult(result.message);
+  });
+  
+  // Simulate Expiry
+  document.querySelector('[data-testid="simulate-expiry-btn"]').addEventListener('click', async function() {
+    const result = await makeRequest('/test-session-store/simulate-session-expiry', 'POST');
+    updateResult(result.message);
+  });
+});
+</script>
+{% endblock %} 

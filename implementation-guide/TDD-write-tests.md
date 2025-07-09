@@ -13,7 +13,7 @@ Confirm you have read the content of the documents, then continue...
 
 ## Story Implementation
 
-For story 1.1:
+For story 1.2:
 
 ### 1. BDD Requirements
 
