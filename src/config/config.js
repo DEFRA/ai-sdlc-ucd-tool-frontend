@@ -219,6 +219,15 @@ export const config = convict({
       default: 'x-cdp-request-id',
       env: 'TRACING_HEADER'
     }
+  },
+  auth: {
+    sharedPassword: {
+      doc: 'Shared password for authentication',
+      format: String,
+      default: null,
+      env: 'SHARED_PASSWORD',
+      sensitive: true
+    }
   }
 })
 
