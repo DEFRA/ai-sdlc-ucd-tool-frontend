@@ -100,13 +100,6 @@ To run the application in `development` mode run:
 npm run dev
 ```
 
-> **Note:** The application requires the `SHARED_PASSWORD` environment variable to be set for authentication functionality. Set this before starting the development server:
->
-> ```bash
-> export SHARED_PASSWORD="your-development-password"
-> npm run dev
-> ```
-
 ### Production
 
 To mimic the application running in `production` mode locally run:
