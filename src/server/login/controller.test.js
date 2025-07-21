@@ -16,6 +16,8 @@ describe('#loginController', () => {
 
   afterAll(async () => {
     await server.stop({ timeout: 0 })
+    // Reset config after test
+    config.set('auth.sharedPassword', null)
   })
 
   describe('POST /login', () => {
