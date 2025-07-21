@@ -1,7 +1,7 @@
 import { createServer } from '../server.js'
 import { statusCodes } from '../common/constants/status-codes.js'
-import { config } from '../../config/config.js'
 import { AUTHENTICATION_MESSAGES } from '../common/constants/authentication-constants.js'
+import { config } from '../../config/config.js'
 
 describe('#loginController', () => {
   let server
@@ -18,13 +18,56 @@ describe('#loginController', () => {
     await server.stop({ timeout: 0 })
   })
 
+  describe('GET /login', () => {
+    test('Should render login form page', async () => {
+      const { result, statusCode } = await server.inject({
+        method: 'GET',
+        url: '/login'
+      })
+
+      expect(statusCode).toBe(statusCodes.ok)
+      expect(result).toEqual(expect.stringContaining('Sign in |'))
+      expect(result).toEqual(expect.stringContaining('Password'))
+      expect(result).toEqual(expect.stringContaining('Continue'))
+    })
+
+    test('Should include UCD Toolkit service name in title', async () => {
+      const { result } = await server.inject({
+        method: 'GET',
+        url: '/login'
+      })
+
+      expect(result).toEqual(
+        expect.stringContaining(
+          '<title>Sign in | ai-sdlc-ucd-tool-frontend</title>'
+        )
+      )
+    })
+
+    test('Should contain password form with proper GDS styling', async () => {
+      const { result } = await server.inject({
+        method: 'GET',
+        url: '/login'
+      })
+
+      expect(result).toEqual(expect.stringContaining('govuk-form-group'))
+      expect(result).toEqual(expect.stringContaining('govuk-label'))
+      expect(result).toEqual(expect.stringContaining('govuk-input'))
+      expect(result).toEqual(expect.stringContaining('govuk-button'))
+      expect(result).toEqual(expect.stringContaining('type="password"'))
+      expect(result).toEqual(expect.stringContaining('name="password"'))
+    })
+  })
+
   describe('POST /login', () => {
     test('Should redirect to home page when correct password is provided', async () => {
+      const correctPassword = config.get('auth.sharedPassword')
+
       const { statusCode, headers, result } = await server.inject({
         method: 'POST',
         url: '/login',
         payload: {
-          password: testPassword
+          password: correctPassword
         }
       })
 
