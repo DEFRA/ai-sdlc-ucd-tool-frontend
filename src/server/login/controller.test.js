@@ -5,18 +5,17 @@ import { AUTHENTICATION_MESSAGES } from '../common/constants/authentication-cons
 
 describe('#loginController', () => {
   let server
+  let testPassword
 
   beforeAll(async () => {
-    // Set test configuration using config.set() pattern
-    config.set('auth.sharedPassword', 'test-password-123')
+    // Use environment-specific configuration (test.json provides default)
+    testPassword = config.get('auth.sharedPassword')
     server = await createServer()
     await server.initialize()
   })
 
   afterAll(async () => {
     await server.stop({ timeout: 0 })
-    // Reset config after test
-    config.set('auth.sharedPassword', null)
   })
 
   describe('POST /login', () => {
@@ -25,7 +24,7 @@ describe('#loginController', () => {
         method: 'POST',
         url: '/login',
         payload: {
-          password: 'test-password-123'
+          password: testPassword
         }
       })
 
@@ -110,14 +109,12 @@ describe('#loginController', () => {
     })
 
     test('Should validate password against SHARED_PASSWORD environment variable', async () => {
-      // Test that it uses the actual environment variable value
-      const correctPassword = config.get('auth.sharedPassword')
-
+      // Test that it uses the actual configuration value
       const { statusCode, headers, result } = await server.inject({
         method: 'POST',
         url: '/login',
         payload: {
-          password: correctPassword
+          password: testPassword
         }
       })
 

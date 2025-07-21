@@ -16,6 +16,12 @@ const isDevelopment = process.env.NODE_ENV === 'development'
 convict.addFormats(convictFormatWithValidator)
 
 export const config = convict({
+  env: {
+    doc: 'Application environment',
+    format: ['development', 'test', 'production'],
+    default: 'development',
+    env: 'NODE_ENV'
+  },
   serviceVersion: {
     doc: 'The service version, this variable is injected into your docker container in CDP environments',
     format: String,
@@ -230,5 +236,8 @@ export const config = convict({
     }
   }
 })
+
+// Load environment-specific configuration
+config.loadFile(path.resolve(dirname, config.get('env') + '.json'))
 
 config.validate({ allowed: 'strict' })
