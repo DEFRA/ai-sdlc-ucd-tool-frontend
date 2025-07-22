@@ -7,7 +7,18 @@ import {
 } from '../common/constants/authentication-constants.js'
 
 /**
- * Login controller for password authentication.
+ * Login controller for GET /login - displays login form
+ */
+export const showLoginFormController = {
+  handler(_request, h) {
+    return h.view('login/index', {
+      pageTitle: 'Sign in'
+    })
+  }
+}
+
+/**
+ * Login controller for POST /login - validates password.
  * Validates password against SHARED_PASSWORD environment variable.
  *
  * @param {Object} request - Hapi request object containing payload with password
