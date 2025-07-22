@@ -16,6 +16,12 @@ const isDevelopment = process.env.NODE_ENV === 'development'
 convict.addFormats(convictFormatWithValidator)
 
 export const config = convict({
+  env: {
+    doc: 'Application environment',
+    format: ['development', 'test', 'production'],
+    default: 'development',
+    env: 'NODE_ENV'
+  },
   serviceVersion: {
     doc: 'The service version, this variable is injected into your docker container in CDP environments',
     format: String,
@@ -219,7 +225,19 @@ export const config = convict({
       default: 'x-cdp-request-id',
       env: 'TRACING_HEADER'
     }
+  },
+  auth: {
+    sharedPassword: {
+      doc: 'Shared password for authentication',
+      format: String,
+      default: null,
+      env: 'SHARED_PASSWORD',
+      sensitive: true
+    }
   }
 })
+
+// Load environment-specific configuration
+config.loadFile(path.resolve(dirname, config.get('env') + '.json'))
 
 config.validate({ allowed: 'strict' })
