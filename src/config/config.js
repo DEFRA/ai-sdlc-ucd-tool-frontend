@@ -233,6 +233,21 @@ export const config = convict({
       default: null,
       env: 'SHARED_PASSWORD',
       sensitive: true
+    },
+    jwtSecret: {
+      doc: 'Secret key for signing JWT tokens',
+      format: String,
+      default: null,
+      env: 'JWT_SECRET',
+      sensitive: true
+    },
+    session: {
+      ttl: {
+        doc: 'Session timeout in seconds',
+        format: Number,
+        default: null,
+        env: 'SESSION_TTL'
+      }
     }
   }
 })

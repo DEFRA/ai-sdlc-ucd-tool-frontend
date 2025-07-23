@@ -1,5 +1,9 @@
 {
   "auth": {
-    "sharedPassword": "test-password-123"
+    "sharedPassword": "test-password-123",
+    "jwtSecret": "test-jwt-secret-for-f1s3-session-creation",
+    "session": {
+      "ttl": 3600
+    }
   }
 }
