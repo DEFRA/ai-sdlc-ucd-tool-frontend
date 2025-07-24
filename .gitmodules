@@ -1,0 +1,3 @@
+[submodule "ai-sdlc-ucd-toolkit-vault"]
+	path = ai-sdlc-ucd-toolkit-vault
+	url = git@github.com:DEFRA/ai-sdlc-ucd-toolkit-vault.git
