@@ -1,8 +1,0 @@
----
-description: 
-globs: 
-alwaysApply: true
----
-Do not keep legacy code. If something is no longer needed then remove it.
-Do not merge old and new, always favour only up to date solutions with single clean code paths.
-Never leave legacy or redunant code behind.
