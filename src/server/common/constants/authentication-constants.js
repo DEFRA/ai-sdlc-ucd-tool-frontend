@@ -5,7 +5,9 @@
 
 export const AUTHENTICATION_MESSAGES = {
   INVALID_PASSWORD: 'Invalid password',
-  SUCCESS_MESSAGE: 'Authentication successful'
+  SUCCESS_MESSAGE: 'Authentication successful',
+  SERVICE_UNAVAILABLE:
+    'Service temporarily unavailable. Please try again in a few moments.'
 }
 
 export const AUTHENTICATION_ROUTES = {

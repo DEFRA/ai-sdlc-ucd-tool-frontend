@@ -1,7 +1,22 @@
+import { vi } from 'vitest'
 import { createServer } from '../server.js'
 import { statusCodes } from '../common/constants/status-codes.js'
 import { AUTHENTICATION_MESSAGES } from '../common/constants/authentication-constants.js'
 import { config } from '../../config/config.js'
+
+// Mock the buildRedisClient function to return our mock
+vi.mock('../common/helpers/redis-client.js', () => {
+  const mockRedisClient = {
+    set: vi.fn().mockResolvedValue('OK'),
+    get: vi.fn().mockResolvedValue(null),
+    del: vi.fn().mockResolvedValue(1),
+    on: vi.fn()
+  }
+
+  return {
+    buildRedisClient: vi.fn(() => mockRedisClient)
+  }
+})
 
 describe('#loginController', () => {
   let server

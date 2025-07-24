@@ -5,6 +5,7 @@ import {
   AUTHENTICATION_ROUTES,
   HTTP_HEADER_NAMES
 } from '../common/constants/authentication-constants.js'
+import { createSession } from '../common/helpers/session-manager.js'
 
 /**
  * Login controller for GET /login - displays login form
@@ -23,10 +24,10 @@ export const showLoginFormController = {
  *
  * @param {Object} request - Hapi request object containing payload with password
  * @param {Object} h - Hapi response toolkit
- * @returns {Object} Response with appropriate status code and headers/error message
+ * @returns {Promise<Object>} Response with appropriate status code and headers/error message
  */
 export const loginController = {
-  handler(request, h) {
+  async handler(request, h) {
     // Input validation - ensure password is provided and is a string
     const { password } = request.payload || {}
 
@@ -42,15 +43,27 @@ export const loginController = {
 
     // Validate against shared password
     if (password === sharedPassword) {
-      return h
-        .response({
-          message: AUTHENTICATION_MESSAGES.SUCCESS_MESSAGE
-        })
-        .code(statusCodes.ok)
-        .header(
-          HTTP_HEADER_NAMES.LOCATION,
-          AUTHENTICATION_ROUTES.HOME_REDIRECT_PATH
-        )
+      try {
+        // Create session and set cookie
+        await createSession(request, h)
+
+        return h
+          .response({
+            message: AUTHENTICATION_MESSAGES.SUCCESS_MESSAGE
+          })
+          .code(statusCodes.ok)
+          .header(
+            HTTP_HEADER_NAMES.LOCATION,
+            AUTHENTICATION_ROUTES.HOME_REDIRECT_PATH
+          )
+      } catch (error) {
+        // If session creation fails, return error
+        return h
+          .response({
+            message: AUTHENTICATION_MESSAGES.SERVICE_UNAVAILABLE
+          })
+          .code(statusCodes.internalServerError)
+      }
     }
 
     // Standardized error response format
