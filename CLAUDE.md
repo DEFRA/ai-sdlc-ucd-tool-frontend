@@ -9,6 +9,7 @@ This is a Node.js/HAPI frontend application for the AI SDLC UCD Toolkit, impleme
 ## Common Development Commands
 
 ### Development
+
 ```bash
 npm run dev           # Run development server with hot reload
 npm run dev:debug     # Run with debugging enabled
@@ -16,6 +17,7 @@ npm start             # Run production server
 ```
 
 ### Testing
+
 ```bash
 npm test              # Run all tests with coverage
 npm run test:watch    # Run tests in watch mode
@@ -24,6 +26,7 @@ vitest <filename>     # Run specific test file
 ```
 
 ### Code Quality
+
 ```bash
 npm run lint          # Run ESLint and Stylelint
 npm run lint:js:fix   # Auto-fix JavaScript linting issues
@@ -32,6 +35,7 @@ npm run format:check  # Check formatting without fixing
 ```
 
 ### Build
+
 ```bash
 npm run build:frontend  # Build frontend assets with Webpack
 ```
@@ -41,6 +45,7 @@ npm run build:frontend  # Build frontend assets with Webpack
 ### High-Level Structure
 
 The application implements a BFF (Backend for Frontend) pattern with:
+
 - **Frontend Service (this repo)**: Node.js/HAPI handling authentication, sessions, and UI
 - **Backend Service**: Python service for business logic (separate repo)
 - **Redis**: Session storage
@@ -85,6 +90,7 @@ src/
 ## Code Patterns
 
 ### Controller Pattern
+
 ```javascript
 export const myController = {
   handler(request, h) {
@@ -98,6 +104,7 @@ export const myController = {
 ```
 
 ### Route Definition
+
 ```javascript
 export const myFeature = {
   plugin: {
@@ -116,20 +123,21 @@ export const myFeature = {
 ```
 
 ### Testing Pattern
+
 ```javascript
 describe('Controller', () => {
   let server
-  
+
   beforeEach(async () => {
     server = await createServer()
   })
-  
+
   test('should handle request', async () => {
     const { payload, statusCode } = await server.inject({
       method: 'GET',
       url: '/path'
     })
-    
+
     expect(statusCode).toBe(200)
     expect(payload).toContain('expected content')
   })
@@ -151,6 +159,7 @@ See `src/config/config.js` for all options.
 ## Template System
 
 Uses Nunjucks with GDS components:
+
 - Base template: `layouts/page.njk`
 - Feature templates in feature directories
 - Search paths configured for govuk-frontend
@@ -159,6 +168,7 @@ Uses Nunjucks with GDS components:
 ## Test-Driven Development
 
 The project includes a custom `/red` slash command for TDD workflow:
+
 - Reads requirements from vault documents
 - Creates feature branches
 - Implements RED phase of TDD
