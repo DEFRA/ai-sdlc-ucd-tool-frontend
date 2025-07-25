@@ -32,11 +32,11 @@ export const loginController = {
     const { password } = request.payload || {}
 
     if (!password || typeof password !== 'string' || password.trim() === '') {
-      return h
-        .response({
-          message: AUTHENTICATION_MESSAGES.INVALID_PASSWORD
-        })
-        .code(statusCodes.unauthorized)
+      return h.view('login/index', {
+        pageTitle: 'Sign in',
+        errorMessage: 'Invalid password. Please try again.',
+        hasError: true
+      })
     }
 
     const sharedPassword = config.get('auth.sharedPassword')
@@ -58,19 +58,19 @@ export const loginController = {
           )
       } catch (error) {
         // If session creation fails, return error
-        return h
-          .response({
-            message: AUTHENTICATION_MESSAGES.SERVICE_UNAVAILABLE
-          })
-          .code(statusCodes.internalServerError)
+        return h.view('login/index', {
+          pageTitle: 'Sign in',
+          errorMessage: 'Unable to process login. Please try again later.',
+          hasError: true
+        })
       }
     }
 
     // Standardized error response format
-    return h
-      .response({
-        message: AUTHENTICATION_MESSAGES.INVALID_PASSWORD
-      })
-      .code(statusCodes.unauthorized)
+    return h.view('login/index', {
+      pageTitle: 'Sign in',
+      errorMessage: 'Invalid password. Please try again.',
+      hasError: true
+    })
   }
 }

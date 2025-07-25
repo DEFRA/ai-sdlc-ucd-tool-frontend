@@ -93,7 +93,7 @@ describe('#loginController', () => {
       })
     })
 
-    test('Should return 401 with error message when incorrect password is provided', async () => {
+    test('Should return login form with error message when incorrect password is provided', async () => {
       const { statusCode, result } = await server.inject({
         method: 'POST',
         url: '/login',
@@ -102,26 +102,26 @@ describe('#loginController', () => {
         }
       })
 
-      expect(statusCode).toBe(statusCodes.unauthorized)
-      expect(result).toEqual({
-        message: AUTHENTICATION_MESSAGES.INVALID_PASSWORD
-      })
+      expect(statusCode).toBe(statusCodes.ok)
+      expect(result).toContain('Invalid password. Please try again.')
+      expect(result).toContain('govuk-error-message')
+      expect(result).toContain('govuk-form-group--error')
     })
 
-    test('Should return 401 with error message when no password is provided', async () => {
+    test('Should return login form with error message when no password is provided', async () => {
       const { statusCode, result } = await server.inject({
         method: 'POST',
         url: '/login',
         payload: {}
       })
 
-      expect(statusCode).toBe(statusCodes.unauthorized)
-      expect(result).toEqual({
-        message: AUTHENTICATION_MESSAGES.INVALID_PASSWORD
-      })
+      expect(statusCode).toBe(statusCodes.ok)
+      expect(result).toContain('Invalid password. Please try again.')
+      expect(result).toContain('govuk-error-message')
+      expect(result).toContain('govuk-form-group--error')
     })
 
-    test('Should return 401 with error message when empty string password is provided', async () => {
+    test('Should return login form with error message when empty string password is provided', async () => {
       const { statusCode, result } = await server.inject({
         method: 'POST',
         url: '/login',
@@ -130,13 +130,13 @@ describe('#loginController', () => {
         }
       })
 
-      expect(statusCode).toBe(statusCodes.unauthorized)
-      expect(result).toEqual({
-        message: AUTHENTICATION_MESSAGES.INVALID_PASSWORD
-      })
+      expect(statusCode).toBe(statusCodes.ok)
+      expect(result).toContain('Invalid password. Please try again.')
+      expect(result).toContain('govuk-error-message')
+      expect(result).toContain('govuk-form-group--error')
     })
 
-    test('Should return 401 with error message when whitespace-only password is provided', async () => {
+    test('Should return login form with error message when whitespace-only password is provided', async () => {
       const { statusCode, result } = await server.inject({
         method: 'POST',
         url: '/login',
@@ -145,13 +145,13 @@ describe('#loginController', () => {
         }
       })
 
-      expect(statusCode).toBe(statusCodes.unauthorized)
-      expect(result).toEqual({
-        message: AUTHENTICATION_MESSAGES.INVALID_PASSWORD
-      })
+      expect(statusCode).toBe(statusCodes.ok)
+      expect(result).toContain('Invalid password. Please try again.')
+      expect(result).toContain('govuk-error-message')
+      expect(result).toContain('govuk-form-group--error')
     })
 
-    test('Should return 401 with error message when non-string password is provided', async () => {
+    test('Should return login form with error message when non-string password is provided', async () => {
       const { statusCode, result } = await server.inject({
         method: 'POST',
         url: '/login',
@@ -160,10 +160,10 @@ describe('#loginController', () => {
         }
       })
 
-      expect(statusCode).toBe(statusCodes.unauthorized)
-      expect(result).toEqual({
-        message: AUTHENTICATION_MESSAGES.INVALID_PASSWORD
-      })
+      expect(statusCode).toBe(statusCodes.ok)
+      expect(result).toContain('Invalid password. Please try again.')
+      expect(result).toContain('govuk-error-message')
+      expect(result).toContain('govuk-form-group--error')
     })
 
     test('Should validate password against SHARED_PASSWORD environment variable', async () => {
