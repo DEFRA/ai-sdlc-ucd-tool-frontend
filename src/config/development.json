@@ -1,5 +1,17 @@
 {
   "auth": {
-    "sharedPassword": "development-password-123"
+    "jwtSecret": "test-jwt-secret-for-f1s3-session-creation",
+    "session": {
+      "ttl": 3600
+    }
+  },
+  "azureAd": {
+    "baseUrl": "https://login.microsoftonline.com",
+    "clientId": "dev-client-id",
+    "clientSecret": "dev-client-secret",
+    "tenantId": "dev-tenant-id",
+    "redirectUri": "http://localhost:3000/auth/callback",
+    "authorizeEndpoint": "oauth2/v2.0/authorize",
+    "tokenEndpoint": "oauth2/v2.0/token"
   }
 }

@@ -1,76 +1,123 @@
-import { config } from '../../config/config.js'
-import { statusCodes } from '../common/constants/status-codes.js'
 import {
   AUTHENTICATION_MESSAGES,
-  AUTHENTICATION_ROUTES,
-  HTTP_HEADER_NAMES
+  AUTHENTICATION_ROUTES
 } from '../common/constants/authentication-constants.js'
-import { createSession } from '../common/helpers/session-manager.js'
+import { createSession, getSession } from '../common/helpers/session-manager.js'
+import {
+  generateStateParameter,
+  storeStateParameter,
+  generatePkceChallenge,
+  storePkceVerifier,
+  buildAuthorizationUrl,
+  validateStateParameter,
+  retrievePkceVerifier,
+  exchangeCodeForTokens
+} from '../authentication/azure-ad-service.js'
 
 /**
- * Login controller for GET /login - displays login form
+ * Login controller for GET /login - redirects to Azure AD
  */
 export const showLoginFormController = {
-  handler(_request, h) {
-    return h.view('login/index', {
-      pageTitle: 'Sign in'
-    })
+  async handler(request, h) {
+    // Check if user already has a valid session
+    const sessionId = request.state.session
+    if (sessionId) {
+      const session = await getSession(sessionId)
+      if (session) {
+        // User already authenticated, redirect to home
+        return h.redirect(AUTHENTICATION_ROUTES.HOME_REDIRECT_PATH)
+      }
+    }
+
+    try {
+      // Generate state parameter for CSRF protection
+      const state = generateStateParameter()
+
+      // Generate PKCE challenge and verifier
+      const { codeVerifier, codeChallenge } = generatePkceChallenge()
+
+      // Store state and PKCE verifier in Redis
+      await storeStateParameter(state)
+      await storePkceVerifier(state, codeVerifier)
+
+      // Build authorization URL with PKCE
+      const authorizationUrl = buildAuthorizationUrl(state, codeChallenge)
+
+      // Redirect to Azure AD
+      return h.redirect(authorizationUrl)
+    } catch (error) {
+      // Handle Azure AD configuration errors
+      return h.view('login/index', {
+        pageTitle: 'Sign in',
+        errorMessage: AUTHENTICATION_MESSAGES.AZURE_AD_UNAVAILABLE,
+        hasError: true
+      })
+    }
   }
 }
 
 /**
- * Login controller for POST /login - validates password.
- * Validates password against SHARED_PASSWORD environment variable.
- *
- * @param {Object} request - Hapi request object containing payload with password
- * @param {Object} h - Hapi response toolkit
- * @returns {Promise<Object>} Response with appropriate status code and headers/error message
+ * OAuth callback controller for GET /auth/callback - handles Azure AD callback
  */
-export const loginController = {
+export const authCallbackController = {
   async handler(request, h) {
-    // Input validation - ensure password is provided and is a string
-    const { password } = request.payload || {}
+    const { code, state, error } = request.query
 
-    if (!password || typeof password !== 'string' || password.trim() === '') {
+    // Handle OAuth errors from Azure AD
+    if (error) {
       return h.view('login/index', {
         pageTitle: 'Sign in',
-        errorMessage: 'Invalid password. Please try again.',
+        errorMessage: AUTHENTICATION_MESSAGES.AZURE_AD_UNAVAILABLE,
         hasError: true
       })
     }
 
-    const sharedPassword = config.get('auth.sharedPassword')
+    // Validate required parameters
+    if (!code || !state) {
+      return h.view('login/index', {
+        pageTitle: 'Sign in',
+        errorMessage: AUTHENTICATION_MESSAGES.INVALID_AUTHENTICATION_RESPONSE,
+        hasError: true
+      })
+    }
 
-    // Validate against shared password
-    if (password === sharedPassword) {
-      try {
-        // Create session and set cookie
-        await createSession(request, h)
-
-        return h
-          .response({
-            message: AUTHENTICATION_MESSAGES.SUCCESS_MESSAGE
-          })
-          .code(statusCodes.ok)
-          .header(
-            HTTP_HEADER_NAMES.LOCATION,
-            AUTHENTICATION_ROUTES.HOME_REDIRECT_PATH
-          )
-      } catch (error) {
-        // If session creation fails, return error
+    try {
+      // Validate state parameter for CSRF protection
+      const isValidState = await validateStateParameter(state)
+      if (!isValidState) {
         return h.view('login/index', {
           pageTitle: 'Sign in',
-          errorMessage: 'Unable to process login. Please try again later.',
+          errorMessage: AUTHENTICATION_MESSAGES.AUTHENTICATION_REQUEST_EXPIRED,
           hasError: true
         })
       }
-    }
 
-    // Standardized error response format
-    return h.view('login/index', {
-      pageTitle: 'Sign in',
-      errorMessage: 'Invalid password. Please try again.',
-      hasError: true
-    })
+      // Retrieve PKCE code verifier
+      const codeVerifier = await retrievePkceVerifier(state)
+      if (!codeVerifier) {
+        return h.view('login/index', {
+          pageTitle: 'Sign in',
+          errorMessage: AUTHENTICATION_MESSAGES.AUTHENTICATION_REQUEST_EXPIRED,
+          hasError: true
+        })
+      }
+
+      // Exchange authorization code for tokens
+      await exchangeCodeForTokens(code, codeVerifier)
+
+      // Create session for authenticated user
+      await createSession(request, h)
+
+      // Redirect to home page
+      return h.redirect(AUTHENTICATION_ROUTES.HOME_REDIRECT_PATH)
+    } catch (error) {
+      request.logger.error('OAuth callback error:', error)
+
+      return h.view('login/index', {
+        pageTitle: 'Sign in',
+        errorMessage: AUTHENTICATION_MESSAGES.AUTHENTICATION_FAILED,
+        hasError: true
+      })
+    }
   }
 }
