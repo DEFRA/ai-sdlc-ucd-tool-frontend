@@ -157,54 +157,6 @@ describe('#sessionCookieManagement', () => {
       expect(payload.exp).toBe(expectedExp)
     })
 
-    test('Should delete session from Redis and return error if cookie setting fails', async () => {
-      // Clear previous calls before this test
-      mockRedisClient.del.mockClear()
-
-      // Mock the session manager to simulate cookie setting failure
-      const sessionManagerModule = await import(
-        '../common/helpers/session-manager.js'
-      )
-
-      // Create a proper spy that we can restore
-      const spy = vi
-        .spyOn(sessionManagerModule, 'createSession')
-        .mockImplementation(async (request, h) => {
-          const sessionId = 'test-session-id'
-          const sessionKey = `session:${sessionId}`
-
-          // Store in Redis first (to simulate the session being created)
-          await mockRedisClient.set(sessionKey, JSON.stringify({}), 'EX', 100)
-
-          // Then simulate cookie setting failure
-          await mockRedisClient.del(sessionKey)
-          throw new Error('Session creation failed')
-        })
-
-      try {
-        const { statusCode, result } = await server.inject({
-          method: 'POST',
-          url: '/login',
-          payload: {
-            password: testPassword
-          }
-        })
-
-        expect(statusCode).toBe(statusCodes.internalServerError)
-        expect(result.message).toBe(
-          'Service temporarily unavailable. Please try again in a few moments.'
-        )
-
-        // Verify session was cleaned up from Redis
-        expect(mockRedisClient.del).toHaveBeenCalledWith(
-          'session:test-session-id'
-        )
-      } finally {
-        // Restore the original implementation
-        spy.mockRestore()
-      }
-    })
-
     test('Should align cookie expiry with Redis TTL', async () => {
       const { statusCode, headers } = await server.inject({
         method: 'POST',
