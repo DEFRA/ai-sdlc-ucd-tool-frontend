@@ -1,12 +1,24 @@
 import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest'
 import jwt from 'jsonwebtoken'
 
+// Test constants for clarity and correlation
+const TEST_DATE = new Date('2024-01-01T00:00:00Z')
+const TEST_DATE_ISO = '2024-01-01T00:00:00.000Z'
+const TEST_DATE_UNIX_SECONDS = 1704067200 // Unix timestamp in seconds for TEST_DATE
+const SESSION_TTL_MS = 3600000 // 1 hour in milliseconds
+const SESSION_TTL_SECONDS = 3600 // 1 hour in seconds
+const EXPIRES_DATE_ISO = '2024-01-01T01:00:00.000Z' // TEST_DATE + 1 hour
+const MOCK_SESSION_ID = 'mock-session-id-123'
+const MOCK_JWT_TOKEN = 'mock-jwt-token'
+const MOCK_JWT_SECRET = 'mock-jwt-secret'
+const MOCK_COOKIE_PASSWORD = 'mock-cookie-password'
+
 // Mock dependencies with proper default exports
 vi.mock('crypto', () => ({
   default: {
-    randomUUID: vi.fn(() => 'mock-session-id-123')
+    randomUUID: vi.fn(() => MOCK_SESSION_ID)
   },
-  randomUUID: vi.fn(() => 'mock-session-id-123')
+  randomUUID: vi.fn(() => MOCK_SESSION_ID)
 }))
 
 vi.mock('jsonwebtoken', () => ({
@@ -26,11 +38,11 @@ vi.mock('../../../config/config.js', () => ({
   config: {
     get: vi.fn((key) => {
       const config = {
-        'session.cache.ttl': 3600000, // 1 hour in milliseconds
-        'auth.jwtSecret': 'mock-jwt-secret',
-        'session.cookie.ttl': 3600000,
+        'session.cache.ttl': SESSION_TTL_MS,
+        'auth.jwtSecret': MOCK_JWT_SECRET,
+        'session.cookie.ttl': SESSION_TTL_MS,
         'session.cookie.secure': true,
-        'session.cookie.password': 'mock-cookie-password',
+        'session.cookie.password': MOCK_COOKIE_PASSWORD,
         redis: { host: 'localhost', port: 6379 }
       }
       return config[key]
@@ -59,11 +71,11 @@ describe('session-manager', () => {
     }
 
     // Mock JWT sign to return predictable token
-    vi.mocked(jwt.sign).mockReturnValue('mock-jwt-token')
+    vi.mocked(jwt.sign).mockReturnValue(MOCK_JWT_TOKEN)
 
     // Mock Date.now for consistent timestamps
     vi.useFakeTimers()
-    vi.setSystemTime(new Date('2024-01-01T00:00:00Z'))
+    vi.setSystemTime(TEST_DATE)
   })
 
   afterEach(() => {
@@ -77,7 +89,7 @@ describe('session-manager', () => {
       const { createSession } = await import('./session-manager.js')
       const result = await createSession(mockRequest, mockH)
 
-      expect(result.session_id).toBe('mock-session-id-123')
+      expect(result.session_id).toBe(MOCK_SESSION_ID)
     })
 
     test('Should generate valid JWT token with correct payload', async () => {
@@ -88,11 +100,11 @@ describe('session-manager', () => {
 
       expect(jwt.sign).toHaveBeenCalledWith(
         {
-          session_id: 'mock-session-id-123',
-          iat: 1704067200 // 2024-01-01T00:00:00Z in seconds
+          session_id: MOCK_SESSION_ID,
+          iat: TEST_DATE_UNIX_SECONDS
         },
-        'mock-jwt-secret',
-        { expiresIn: 3600 }
+        MOCK_JWT_SECRET,
+        { expiresIn: SESSION_TTL_SECONDS }
       )
     })
 
@@ -103,15 +115,15 @@ describe('session-manager', () => {
       await createSession(mockRequest, mockH)
 
       expect(mockRedisClient.set).toHaveBeenCalledWith(
-        'session:mock-session-id-123',
+        `session:${MOCK_SESSION_ID}`,
         JSON.stringify({
-          session_id: 'mock-session-id-123',
-          session_token: 'mock-jwt-token',
-          created_at: '2024-01-01T00:00:00.000Z',
-          expires_at: '2024-01-01T01:00:00.000Z'
+          session_id: MOCK_SESSION_ID,
+          session_token: MOCK_JWT_TOKEN,
+          created_at: TEST_DATE_ISO,
+          expires_at: EXPIRES_DATE_ISO
         }),
         'EX',
-        3600
+        SESSION_TTL_SECONDS
       )
     })
 
@@ -121,19 +133,15 @@ describe('session-manager', () => {
       const { createSession } = await import('./session-manager.js')
       await createSession(mockRequest, mockH)
 
-      expect(mockH.state).toHaveBeenCalledWith(
-        'session',
-        'mock-session-id-123',
-        {
-          ttl: 3600000,
-          isSecure: true,
-          isHttpOnly: true,
-          isSameSite: 'Strict',
-          path: '/',
-          password: 'mock-cookie-password',
-          encoding: 'iron'
-        }
-      )
+      expect(mockH.state).toHaveBeenCalledWith('session', MOCK_SESSION_ID, {
+        ttl: SESSION_TTL_MS,
+        isSecure: true,
+        isHttpOnly: true,
+        isSameSite: 'Strict',
+        path: '/',
+        password: MOCK_COOKIE_PASSWORD,
+        encoding: 'iron'
+      })
     })
 
     test('Should return session data object with all required fields', async () => {
@@ -143,10 +151,10 @@ describe('session-manager', () => {
       const result = await createSession(mockRequest, mockH)
 
       expect(result).toEqual({
-        session_id: 'mock-session-id-123',
-        session_token: 'mock-jwt-token',
-        created_at: '2024-01-01T00:00:00.000Z',
-        expires_at: '2024-01-01T01:00:00.000Z'
+        session_id: MOCK_SESSION_ID,
+        session_token: MOCK_JWT_TOKEN,
+        created_at: TEST_DATE_ISO,
+        expires_at: EXPIRES_DATE_ISO
       })
     })
 
@@ -163,7 +171,7 @@ describe('session-manager', () => {
 
       // Should attempt cleanup
       expect(mockRedisClient.del).toHaveBeenCalledWith(
-        'session:mock-session-id-123'
+        `session:${MOCK_SESSION_ID}`
       )
     })
 
@@ -180,7 +188,7 @@ describe('session-manager', () => {
 
       // Should still attempt cleanup even if it fails
       expect(mockRedisClient.del).toHaveBeenCalledWith(
-        'session:mock-session-id-123'
+        `session:${MOCK_SESSION_ID}`
       )
     })
   })
@@ -190,8 +198,8 @@ describe('session-manager', () => {
       const mockSessionData = {
         session_id: 'test-session-id',
         session_token: 'test-token',
-        created_at: '2024-01-01T00:00:00.000Z',
-        expires_at: '2024-01-01T01:00:00.000Z'
+        created_at: TEST_DATE_ISO,
+        expires_at: EXPIRES_DATE_ISO
       }
       mockRedisClient.get.mockResolvedValueOnce(JSON.stringify(mockSessionData))
 
@@ -217,8 +225,8 @@ describe('session-manager', () => {
       const mockSessionData = {
         session_id: 'parsed-session',
         session_token: 'parsed-token',
-        created_at: '2024-01-01T00:00:00.000Z',
-        expires_at: '2024-01-01T01:00:00.000Z'
+        created_at: TEST_DATE_ISO,
+        expires_at: EXPIRES_DATE_ISO
       }
       mockRedisClient.get.mockResolvedValueOnce(JSON.stringify(mockSessionData))
 
