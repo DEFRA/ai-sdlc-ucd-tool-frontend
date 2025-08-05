@@ -5,14 +5,16 @@ import {
 import { createSession, getSession } from '../common/helpers/session-manager.js'
 import {
   generateStateParameter,
+  generatePkceChallenge
+} from '../authentication/oauth-crypto-service.js'
+import {
   storeStateParameter,
-  generatePkceChallenge,
   storePkceVerifier,
-  buildAuthorizationUrl,
   validateStateParameter,
-  retrievePkceVerifier,
-  exchangeCodeForTokens
-} from '../authentication/azure-ad-service.js'
+  retrievePkceVerifier
+} from '../authentication/oauth-state-storage.js'
+import { buildAuthorizationUrl } from '../authentication/azure-ad-url-builder.js'
+import { exchangeCodeForTokens } from '../authentication/azure-ad-token-client.js'
 
 /**
  * Login controller for GET /login - redirects to Azure AD

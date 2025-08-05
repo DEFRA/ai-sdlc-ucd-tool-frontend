@@ -19,21 +19,33 @@ vi.mock('../common/helpers/redis-client.js', () => {
   }
 })
 
-// Mock Azure AD service
-vi.mock('../authentication/azure-ad-service.js', () => ({
+// Mock OAuth crypto service
+vi.mock('../authentication/oauth-crypto-service.js', () => ({
   generateStateParameter: vi.fn(() => 'mock-state-parameter'),
-  storeStateParameter: vi.fn().mockResolvedValue(undefined),
   generatePkceChallenge: vi.fn(() => ({
     codeVerifier: 'mock-code-verifier',
     codeChallenge: 'mock-code-challenge'
-  })),
+  }))
+}))
+
+// Mock OAuth state storage
+vi.mock('../authentication/oauth-state-storage.js', () => ({
+  storeStateParameter: vi.fn().mockResolvedValue(undefined),
   storePkceVerifier: vi.fn().mockResolvedValue(undefined),
+  validateStateParameter: vi.fn().mockResolvedValue(true),
+  retrievePkceVerifier: vi.fn().mockResolvedValue('mock-code-verifier')
+}))
+
+// Mock Azure AD URL builder
+vi.mock('../authentication/azure-ad-url-builder.js', () => ({
   buildAuthorizationUrl: vi.fn(
     (state, challenge) =>
       `https://test-auth-server.com/dev-tenant-id/oauth2/v2.0/authorize?state=${state}&code_challenge=${challenge}`
-  ),
-  validateStateParameter: vi.fn().mockResolvedValue(true),
-  retrievePkceVerifier: vi.fn().mockResolvedValue('mock-code-verifier'),
+  )
+}))
+
+// Mock Azure AD token client
+vi.mock('../authentication/azure-ad-token-client.js', () => ({
   exchangeCodeForTokens: vi.fn().mockResolvedValue({
     access_token: 'mock-access-token',
     refresh_token: 'mock-refresh-token',
@@ -105,7 +117,7 @@ describe('#loginController', () => {
 
     test('Should show error page when Azure AD configuration is missing', async () => {
       const { buildAuthorizationUrl } = await import(
-        '../authentication/azure-ad-service.js'
+        '../authentication/azure-ad-url-builder.js'
       )
       buildAuthorizationUrl.mockImplementationOnce(() => {
         throw new Error('Azure AD configuration is incomplete')
@@ -123,7 +135,7 @@ describe('#loginController', () => {
 
     test('Should show error page when Redis is unavailable', async () => {
       const { storeStateParameter } = await import(
-        '../authentication/azure-ad-service.js'
+        '../authentication/oauth-state-storage.js'
       )
       storeStateParameter.mockRejectedValueOnce(
         new Error('Redis connection failed')
@@ -194,7 +206,7 @@ describe('#loginController', () => {
 
     test('Should handle invalid state parameter', async () => {
       const { validateStateParameter } = await import(
-        '../authentication/azure-ad-service.js'
+        '../authentication/oauth-state-storage.js'
       )
       validateStateParameter.mockResolvedValueOnce(false)
 
@@ -212,7 +224,7 @@ describe('#loginController', () => {
 
     test('Should handle token exchange failure', async () => {
       const { exchangeCodeForTokens } = await import(
-        '../authentication/azure-ad-service.js'
+        '../authentication/azure-ad-token-client.js'
       )
       exchangeCodeForTokens.mockRejectedValueOnce(
         new Error('Token exchange failed')
