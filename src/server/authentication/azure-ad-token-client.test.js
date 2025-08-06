@@ -158,9 +158,7 @@ describe('#azure-ad-token-client', () => {
 
       await expect(
         exchangeCodeForTokens('bad-code', 'verifier')
-      ).rejects.toThrow(
-        `Token exchange failed: 400 ${JSON.stringify(errorResponse)}`
-      )
+      ).rejects.toThrow('Token exchange failed with status: 400')
     })
 
     test('Should throw error when token exchange fails with 401 status', async () => {
@@ -186,7 +184,7 @@ describe('#azure-ad-token-client', () => {
       })
 
       await expect(exchangeCodeForTokens('code', 'verifier')).rejects.toThrow(
-        'Token exchange failed: 401 Unauthorized: Invalid client credentials'
+        'Token exchange failed with status: 401'
       )
     })
 

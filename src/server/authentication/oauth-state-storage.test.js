@@ -50,6 +50,15 @@ describe('#oauth-state-storage', () => {
       )
     })
 
+    test('Should reject invalid state parameter', async () => {
+      const state = 'invalid$state'
+
+      await expect(storeStateParameter(state)).rejects.toThrow(
+        'Invalid state parameter format'
+      )
+      expect(mockRedisClient.set).not.toHaveBeenCalled()
+    })
+
     test('Should handle Redis errors', async () => {
       const state = 'test-state'
       const error = new Error('Redis connection failed')
@@ -75,6 +84,16 @@ describe('#oauth-state-storage', () => {
         'EX',
         OAUTH_CONSTANTS.STATE_TTL_SECONDS
       )
+    })
+
+    test('Should reject invalid state parameter', async () => {
+      const state = 'invalid@state'
+      const codeVerifier = 'test-verifier'
+
+      await expect(storePkceVerifier(state, codeVerifier)).rejects.toThrow(
+        'Invalid state parameter format'
+      )
+      expect(mockRedisClient.set).not.toHaveBeenCalled()
     })
 
     test('Should handle empty code verifier', async () => {
@@ -108,6 +127,15 @@ describe('#oauth-state-storage', () => {
       expect(mockRedisClient.del).toHaveBeenCalledWith(
         `${OAUTH_CONSTANTS.STATE_KEY_PREFIX}valid-state-789`
       )
+    })
+
+    test('Should reject malformed state parameter', async () => {
+      const state = 'invalid state with spaces'
+
+      await expect(validateStateParameter(state)).rejects.toThrow(
+        'Invalid state parameter format'
+      )
+      expect(mockRedisClient.exists).not.toHaveBeenCalled()
     })
 
     test('Should return false for invalid state and not delete', async () => {
@@ -150,6 +178,15 @@ describe('#oauth-state-storage', () => {
       expect(mockRedisClient.del).toHaveBeenCalledWith(
         `${OAUTH_CONSTANTS.PKCE_KEY_PREFIX}test-state-abc`
       )
+    })
+
+    test('Should reject malformed state parameter', async () => {
+      const state = 'state#with#hashes'
+
+      await expect(retrievePkceVerifier(state)).rejects.toThrow(
+        'Invalid state parameter format'
+      )
+      expect(mockRedisClient.get).not.toHaveBeenCalled()
     })
 
     test('Should return null when verifier not found', async () => {

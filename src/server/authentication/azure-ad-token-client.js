@@ -44,8 +44,7 @@ export async function exchangeCodeForTokens(code, codeVerifier) {
   })
 
   if (!response.ok) {
-    const errorText = await response.text()
-    throw new Error(`Token exchange failed: ${response.status} ${errorText}`)
+    throw new Error(`Token exchange failed with status: ${response.status}`)
   }
 
   return await response.json()

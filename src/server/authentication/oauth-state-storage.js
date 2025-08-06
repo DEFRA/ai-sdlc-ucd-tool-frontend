@@ -1,6 +1,7 @@
 import { config } from '../../config/config.js'
 import { buildRedisClient } from '../common/helpers/redis-client.js'
 import { OAUTH_CONSTANTS } from '../common/constants/authentication-constants.js'
+import { validateState } from './state-validator.js'
 
 const redisClient = buildRedisClient(config.get('redis'))
 
@@ -10,6 +11,7 @@ const redisClient = buildRedisClient(config.get('redis'))
  * @returns {Promise<void>}
  */
 export async function storeStateParameter(state) {
+  validateState(state)
   const key = `${OAUTH_CONSTANTS.STATE_KEY_PREFIX}${state}`
   await redisClient.set(key, '1', 'EX', OAUTH_CONSTANTS.STATE_TTL_SECONDS)
 }
@@ -21,6 +23,7 @@ export async function storeStateParameter(state) {
  * @returns {Promise<void>}
  */
 export async function storePkceVerifier(state, codeVerifier) {
+  validateState(state)
   const key = `${OAUTH_CONSTANTS.PKCE_KEY_PREFIX}${state}`
   await redisClient.set(
     key,
@@ -36,6 +39,7 @@ export async function storePkceVerifier(state, codeVerifier) {
  * @returns {Promise<boolean>} True if valid, false otherwise
  */
 export async function validateStateParameter(state) {
+  validateState(state)
   const key = `${OAUTH_CONSTANTS.STATE_KEY_PREFIX}${state}`
   const exists = await redisClient.exists(key)
 
@@ -53,6 +57,7 @@ export async function validateStateParameter(state) {
  * @returns {Promise<string|null>} The code verifier or null if not found
  */
 export async function retrievePkceVerifier(state) {
+  validateState(state)
   const key = `${OAUTH_CONSTANTS.PKCE_KEY_PREFIX}${state}`
   const codeVerifier = await redisClient.get(key)
 

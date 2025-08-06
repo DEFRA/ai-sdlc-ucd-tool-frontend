@@ -255,7 +255,7 @@ export const config = convict({
       format: String,
       default: null,
       env: 'AZ_CLIENT_ID',
-      sensitive: false
+      sensitive: true
     },
     clientSecret: {
       doc: 'Azure AD application client secret',
@@ -269,7 +269,7 @@ export const config = convict({
       format: String,
       default: null,
       env: 'AZ_TENANT_ID',
-      sensitive: false
+      sensitive: true
     },
     redirectUri: {
       doc: 'OAuth redirect URI for Azure AD callback',
