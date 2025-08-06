@@ -48,18 +48,7 @@ describe('context and cache', () => {
           assetPath: '/public/assets',
           breadcrumbs: [],
           getAssetPath: expect.any(Function),
-          navigation: [
-            {
-              current: true,
-              text: 'Home',
-              href: '/'
-            },
-            {
-              current: false,
-              text: 'About',
-              href: '/about'
-            }
-          ],
+          navigation: [],
           serviceName: 'ai-sdlc-ucd-tool-frontend',
           serviceUrl: '/'
         })
@@ -137,18 +126,7 @@ describe('context and cache', () => {
           assetPath: '/public/assets',
           breadcrumbs: [],
           getAssetPath: expect.any(Function),
-          navigation: [
-            {
-              current: true,
-              text: 'Home',
-              href: '/'
-            },
-            {
-              current: false,
-              text: 'About',
-              href: '/about'
-            }
-          ],
+          navigation: [],
           serviceName: 'ai-sdlc-ucd-tool-frontend',
           serviceUrl: '/'
         })

@@ -1,0 +1,98 @@
+{% extends "layouts/page.njk" %}
+
+{% block content %}
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds">
+      
+      <!-- Breadcrumb -->
+      <nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
+        <ol class="govuk-breadcrumbs__list">
+          <li class="govuk-breadcrumbs__list-item">
+            <a class="govuk-breadcrumbs__link" href="#">Task-Focused Workflow</a>
+          </li>
+          <li class="govuk-breadcrumbs__list-item">
+            Enter transcript
+          </li>
+        </ol>
+      </nav>
+
+      <!-- Step indicator -->
+      <p class="govuk-body-s">Step 1 of 3</p>
+
+      <!-- Main heading -->
+      <h1 class="govuk-heading-xl">Enter interview transcript</h1>
+
+      <!-- Description -->
+      <p class="govuk-body">
+        Paste your interview transcript text below. The system will automatically scan for personally identifiable information (PII) which you can then review and redact.
+      </p>
+
+      <!-- Text requirements box -->
+      <div class="govuk-inset-text">
+        <h2 class="govuk-heading-s">Text requirements:</h2>
+        <ul class="govuk-list govuk-list--bullet">
+          <li>Plain text format</li>
+          <li>Maximum 50,000 characters</li>
+          <li>Interview transcript content only</li>
+        </ul>
+      </div>
+
+      <!-- Form section -->
+      <form>
+        <div class="govuk-form-group">
+          <h2 class="govuk-heading-l">Enter transcript text</h2>
+          
+          <label class="govuk-label" for="transcript-text">
+            Paste transcript text
+          </label>
+          
+          <div class="govuk-hint">
+            Copy and paste your interview transcript text into the box below
+          </div>
+          
+          <textarea class="govuk-textarea" id="transcript-text" name="transcript-text" rows="15" aria-describedby="transcript-text-hint"></textarea>
+          
+          <div id="transcript-text-hint" class="govuk-hint">
+            You can enter up to 50,000 characters
+          </div>
+        </div>
+
+        <!-- Data protection section -->
+        <fieldset class="govuk-fieldset">
+          <legend class="govuk-fieldset__legend govuk-fieldset__legend--l">
+            <h2 class="govuk-fieldset__heading">Data protection</h2>
+          </legend>
+
+          <div class="govuk-checkboxes" data-module="govuk-checkboxes">
+            <div class="govuk-checkboxes__item">
+              <input class="govuk-checkboxes__input" id="informed-consent" name="data-protection" type="checkbox" value="informed-consent">
+              <label class="govuk-label govuk-checkboxes__label" for="informed-consent">
+                I confirm that participants have provided informed consent for their data to be processed
+              </label>
+            </div>
+            
+            <div class="govuk-checkboxes__item">
+              <input class="govuk-checkboxes__input" id="gdpr-compliance" name="data-protection" type="checkbox" value="gdpr-compliance">
+              <label class="govuk-label govuk-checkboxes__label" for="gdpr-compliance">
+                This research complies with GDPR and departmental data protection policies
+              </label>
+            </div>
+            
+            <div class="govuk-checkboxes__item">
+              <input class="govuk-checkboxes__input" id="market-research" name="data-protection" type="checkbox" value="market-research">
+              <label class="govuk-label govuk-checkboxes__label" for="market-research">
+                This research follows Market Research Society guidelines
+              </label>
+            </div>
+          </div>
+        </fieldset>
+
+        <!-- Submit button -->
+        <button class="govuk-button govuk-button--start" data-module="govuk-button">
+          Submit and scan for PII
+        </button>
+      </form>
+
+    </div>
+  </div>
+{% endblock %}
