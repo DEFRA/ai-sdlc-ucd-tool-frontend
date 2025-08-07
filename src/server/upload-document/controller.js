@@ -14,10 +14,9 @@ export const uploadDocumentController = {
         return h.redirect('/')
       }
 
-      // Validate session
       const session = await getSession(sessionId)
 
-      // If session is invalid, redirect to root
+      // If session is invalid or expired, redirect to root
       if (!session) {
         return h.redirect('/')
       }

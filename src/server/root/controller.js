@@ -20,13 +20,6 @@ export const rootController = {
         return h.redirect(AUTHENTICATION_ROUTES.LOGIN_PATH)
       }
 
-      const now = new Date()
-      const expiresAt = new Date(session.expires_at)
-
-      if (now >= expiresAt) {
-        return h.redirect(AUTHENTICATION_ROUTES.LOGIN_PATH)
-      }
-
       return h.redirect('/upload-document')
     } catch (error) {
       request.log('error', {

@@ -44,22 +44,6 @@ describe('rootController', () => {
       )
     })
 
-    it('should redirect to login when session has expired', async () => {
-      mockRequest.state.session = 'test-session-id'
-      const expiredSession = {
-        session_id: 'test-session-id',
-        expires_at: new Date(Date.now() - 1000).toISOString()
-      }
-      getSession.mockResolvedValue(expiredSession)
-
-      await rootController.handler(mockRequest, mockH)
-
-      expect(getSession).toHaveBeenCalledWith('test-session-id')
-      expect(mockH.redirect).toHaveBeenCalledWith(
-        AUTHENTICATION_ROUTES.LOGIN_PATH
-      )
-    })
-
     it('should redirect to upload-document when session is valid', async () => {
       mockRequest.state.session = 'test-session-id'
       const validSession = {
