@@ -227,13 +227,6 @@ export const config = convict({
     }
   },
   auth: {
-    sharedPassword: {
-      doc: 'Shared password for authentication',
-      format: String,
-      default: null,
-      env: 'SHARED_PASSWORD',
-      sensitive: true
-    },
     session: {
       ttl: {
         doc: 'Session timeout in seconds',
@@ -248,6 +241,53 @@ export const config = convict({
       default: 'jwt-secret-must-be-at-least-32-characters-long',
       env: 'JWT_SECRET',
       sensitive: true
+    }
+  },
+  azureAd: {
+    baseUrl: {
+      doc: 'Azure AD base URL',
+      format: 'url',
+      default: 'https://login.microsoftonline.com',
+      env: 'AZ_BASE_URL'
+    },
+    clientId: {
+      doc: 'Azure AD application client ID',
+      format: String,
+      default: null,
+      env: 'AZ_CLIENT_ID',
+      sensitive: true
+    },
+    clientSecret: {
+      doc: 'Azure AD application client secret',
+      format: String,
+      default: null,
+      env: 'AZ_CLIENT_SECRET',
+      sensitive: true
+    },
+    tenantId: {
+      doc: 'Azure AD tenant ID',
+      format: String,
+      default: null,
+      env: 'AZ_TENANT_ID',
+      sensitive: true
+    },
+    redirectUri: {
+      doc: 'OAuth redirect URI for Azure AD callback',
+      format: 'url',
+      default: 'http://localhost:3000/auth/callback',
+      env: 'AZ_REDIRECT_URI'
+    },
+    authorizeEndpoint: {
+      doc: 'Azure AD authorize endpoint path',
+      format: String,
+      default: 'oauth2/v2.0/authorize',
+      env: 'AZ_ENDPOINT_AUTHORIZE'
+    },
+    tokenEndpoint: {
+      doc: 'Azure AD token endpoint path',
+      format: String,
+      default: 'oauth2/v2.0/token',
+      env: 'AZ_ENDPOINT_TOKEN'
     }
   }
 })

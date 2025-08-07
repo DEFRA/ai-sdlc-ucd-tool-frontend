@@ -1,9 +1,17 @@
 {
   "auth": {
-    "sharedPassword": "test-password-123",
     "jwtSecret": "test-jwt-secret-for-f1s3-session-creation",
     "session": {
       "ttl": 3600
     }
+  },
+  "azureAd": {
+    "baseUrl": "https://test-auth-server.com",
+    "clientId": "test-client-id",
+    "clientSecret": "test-client-secret",
+    "tenantId": "test-tenant-id",
+    "redirectUri": "http://localhost:3000/auth/callback",
+    "authorizeEndpoint": "oauth2/v2.0/authorize",
+    "tokenEndpoint": "oauth2/v2.0/token"
   }
 }

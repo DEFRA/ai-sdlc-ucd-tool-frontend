@@ -16,7 +16,7 @@
             <div class="govuk-error-summary__body">
               <ul class="govuk-list govuk-error-summary__list">
                 <li>
-                  <a href="#password">{{ errorMessage }}</a>
+                  <span class="govuk-error-message">{{ errorMessage }}</span>
                 </li>
               </ul>
             </div>
@@ -27,23 +27,7 @@
           
           <p class="govuk-body">It is not a real service. You should only continue if you have been invited to test this prototype.</p>
           
-          <form method="post" action="/login" novalidate>
-            <div class="govuk-form-group{% if hasError %} govuk-form-group--error{% endif %}">
-              <label class="govuk-label" for="password">
-                Password
-              </label>
-              {% if hasError %}
-              <span id="password-error" class="govuk-error-message">
-                <span class="govuk-visually-hidden">Error:</span> {{ errorMessage }}
-              </span>
-              {% endif %}
-              <input class="govuk-input{% if hasError %} govuk-input--error{% endif %}" id="password" name="password" type="password" value=""{% if hasError %} aria-describedby="password-error"{% endif %}>
-            </div>
-            
-            <button class="govuk-button" data-module="govuk-button" type="submit">
-              Continue
-            </button>
-          </form>
+          <p class="govuk-body">You will be redirected to sign in with your Microsoft account.</p>
           
         </div>
       </div>

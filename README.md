@@ -84,6 +84,14 @@ return await fetch(url, {
 
 ## Local Development
 
+### Envars
+
+The following environment variables must be available. Either set them manually or override the defaults in `src/config/development.json`
+AZ_BASE_URL
+AZ_CLIENT_ID
+AZ_CLIENT_SECRET
+AZ_TENANT_ID
+
 ### Setup
 
 Install application dependencies:

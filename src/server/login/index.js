@@ -1,4 +1,7 @@
-import { loginController, showLoginFormController } from './controller.js'
+import {
+  showLoginFormController,
+  authCallbackController
+} from './controller.js'
 
 /**
  * Sets up the routes used for login functionality.
@@ -15,9 +18,9 @@ export const login = {
           ...showLoginFormController
         },
         {
-          method: 'POST',
-          path: '/login',
-          ...loginController
+          method: 'GET',
+          path: '/auth/callback',
+          ...authCallbackController
         }
       ])
     }
