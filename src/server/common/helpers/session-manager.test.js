@@ -58,22 +58,43 @@ describe('session-manager', () => {
   let mockRequest
   let mockH
 
+  // Helper functions to reduce repetition
+  const createSession = () =>
+    import('./session-manager.js').then((m) => m.createSession)
+  const getSession = () =>
+    import('./session-manager.js').then((m) => m.getSession)
+  const deleteSession = () =>
+    import('./session-manager.js').then((m) => m.deleteSession)
+
+  const setupRedisSuccess = () =>
+    mockRedisClient.set.mockResolvedValueOnce('OK')
+  const setupRedisFailure = (error = new Error('Redis connection failed')) => {
+    mockRedisClient.set.mockRejectedValueOnce(error)
+  }
+
+  const createMockSession = (overrides = {}) => ({
+    session_id: 'test-session',
+    session_token: 'test-token',
+    created_at: TEST_DATE_ISO,
+    expires_at: EXPIRES_DATE_ISO,
+    ...overrides
+  })
+
+  const expectSessionData = () => ({
+    session_id: MOCK_SESSION_ID,
+    session_token: MOCK_JWT_TOKEN,
+    created_at: TEST_DATE_ISO,
+    expires_at: EXPIRES_DATE_ISO
+  })
+
   beforeEach(() => {
     vi.clearAllMocks()
-
-    // Mock request object (minimal, not testing HAPI)
     mockRequest = {}
-
-    // Mock response toolkit (h) - only the methods we use
     mockH = {
       state: vi.fn(),
       unstate: vi.fn()
     }
-
-    // Mock JWT sign to return predictable token
     vi.mocked(jwt.sign).mockReturnValue(MOCK_JWT_TOKEN)
-
-    // Mock Date.now for consistent timestamps
     vi.useFakeTimers()
     vi.setSystemTime(TEST_DATE)
   })
@@ -84,19 +105,16 @@ describe('session-manager', () => {
 
   describe('createSession', () => {
     test('Should create unique session ID', async () => {
-      mockRedisClient.set.mockResolvedValueOnce('OK')
-
-      const { createSession } = await import('./session-manager.js')
-      const result = await createSession(mockRequest, mockH)
-
+      setupRedisSuccess()
+      const result = await (await createSession())(mockRequest, mockH)
       expect(result.session_id).toBe(MOCK_SESSION_ID)
     })
 
     test('Should generate valid JWT token with correct payload', async () => {
-      mockRedisClient.set.mockResolvedValueOnce('OK')
-
-      const { createSession } = await import('./session-manager.js')
-      await createSession(mockRequest, mockH)
+      setupRedisSuccess()
+      await (
+        await createSession()
+      )(mockRequest, mockH)
 
       expect(jwt.sign).toHaveBeenCalledWith(
         {
@@ -109,29 +127,24 @@ describe('session-manager', () => {
     })
 
     test('Should store session in Redis with correct TTL', async () => {
-      mockRedisClient.set.mockResolvedValueOnce('OK')
-
-      const { createSession } = await import('./session-manager.js')
-      await createSession(mockRequest, mockH)
+      setupRedisSuccess()
+      await (
+        await createSession()
+      )(mockRequest, mockH)
 
       expect(mockRedisClient.set).toHaveBeenCalledWith(
         `session:${MOCK_SESSION_ID}`,
-        JSON.stringify({
-          session_id: MOCK_SESSION_ID,
-          session_token: MOCK_JWT_TOKEN,
-          created_at: TEST_DATE_ISO,
-          expires_at: EXPIRES_DATE_ISO
-        }),
+        JSON.stringify(expectSessionData()),
         'EX',
         SESSION_TTL_SECONDS
       )
     })
 
     test('Should set secure HTTP-only cookie', async () => {
-      mockRedisClient.set.mockResolvedValueOnce('OK')
-
-      const { createSession } = await import('./session-manager.js')
-      await createSession(mockRequest, mockH)
+      setupRedisSuccess()
+      await (
+        await createSession()
+      )(mockRequest, mockH)
 
       expect(mockH.state).toHaveBeenCalledWith('session', MOCK_SESSION_ID, {
         ttl: SESSION_TTL_MS,
@@ -145,48 +158,25 @@ describe('session-manager', () => {
     })
 
     test('Should return session data object with all required fields', async () => {
-      mockRedisClient.set.mockResolvedValueOnce('OK')
-
-      const { createSession } = await import('./session-manager.js')
-      const result = await createSession(mockRequest, mockH)
-
-      expect(result).toEqual({
-        session_id: MOCK_SESSION_ID,
-        session_token: MOCK_JWT_TOKEN,
-        created_at: TEST_DATE_ISO,
-        expires_at: EXPIRES_DATE_ISO
-      })
+      setupRedisSuccess()
+      const result = await (await createSession())(mockRequest, mockH)
+      expect(result).toEqual(expectSessionData())
     })
 
-    test('Should handle Redis connection failures', async () => {
-      const redisError = new Error('Redis connection failed')
-      mockRedisClient.set.mockRejectedValueOnce(redisError)
-      mockRedisClient.del.mockResolvedValueOnce(1)
+    test.each([
+      ['Redis connection failed', true],
+      ['Redis connection failed with cleanup failure', false]
+    ])('Should handle Redis failures: %s', async (_, cleanupSucceeds) => {
+      setupRedisFailure()
+      if (cleanupSucceeds) {
+        mockRedisClient.del.mockResolvedValueOnce(1)
+      } else {
+        mockRedisClient.del.mockRejectedValueOnce(new Error('Cleanup failed'))
+      }
 
-      const { createSession } = await import('./session-manager.js')
-
-      await expect(createSession(mockRequest, mockH)).rejects.toThrow(
+      await expect((await createSession())(mockRequest, mockH)).rejects.toThrow(
         'Session creation failed'
       )
-
-      // Should attempt cleanup
-      expect(mockRedisClient.del).toHaveBeenCalledWith(
-        `session:${MOCK_SESSION_ID}`
-      )
-    })
-
-    test('Should ignore cleanup errors when Redis storage fails', async () => {
-      const redisError = new Error('Redis connection failed')
-      mockRedisClient.set.mockRejectedValueOnce(redisError)
-      mockRedisClient.del.mockRejectedValueOnce(new Error('Cleanup failed'))
-
-      const { createSession } = await import('./session-manager.js')
-
-      await expect(createSession(mockRequest, mockH)).rejects.toThrow(
-        'Session creation failed'
-      )
-
-      // Should still attempt cleanup even if it fails
       expect(mockRedisClient.del).toHaveBeenCalledWith(
         `session:${MOCK_SESSION_ID}`
       )
@@ -195,67 +185,93 @@ describe('session-manager', () => {
 
   describe('getSession', () => {
     test('Should retrieve session from Redis with correct key', async () => {
-      const mockSessionData = {
-        session_id: 'test-session-id',
-        session_token: 'test-token',
-        created_at: TEST_DATE_ISO,
-        expires_at: EXPIRES_DATE_ISO
-      }
-      mockRedisClient.get.mockResolvedValueOnce(JSON.stringify(mockSessionData))
+      const sessionData = createMockSession({ session_id: 'test-session-id' })
+      mockRedisClient.get.mockResolvedValueOnce(JSON.stringify(sessionData))
 
-      const { getSession } = await import('./session-manager.js')
-      const result = await getSession('test-session-id')
+      const result = await (await getSession())('test-session-id')
 
       expect(mockRedisClient.get).toHaveBeenCalledWith(
         'session:test-session-id'
       )
-      expect(result).toEqual(mockSessionData)
+      expect(result).toEqual(sessionData)
     })
 
-    test('Should return null for non-existent sessions', async () => {
-      mockRedisClient.get.mockResolvedValueOnce(null)
+    test.each([
+      ['null', null],
+      ['undefined', undefined],
+      ['empty string', '']
+    ])('Should return null when sessionId is %s', async (_, sessionId) => {
+      const result = await (await getSession())(sessionId)
+      expect(result).toBeNull()
+      expect(mockRedisClient.get).not.toHaveBeenCalled()
+    })
 
-      const { getSession } = await import('./session-manager.js')
-      const result = await getSession('non-existent-session')
+    test.each([
+      ['non-existent session', null],
+      ['invalid JSON', 'invalid-json-data'],
+      ['Redis error', new Error('Redis get failed')]
+    ])('Should return null for %s', async (_, mockValue) => {
+      if (mockValue instanceof Error) {
+        mockRedisClient.get.mockRejectedValueOnce(mockValue)
+      } else {
+        mockRedisClient.get.mockResolvedValueOnce(mockValue)
+      }
 
+      const result = await (await getSession())('test-session')
       expect(result).toBeNull()
     })
 
-    test('Should parse JSON session data correctly', async () => {
-      const mockSessionData = {
-        session_id: 'parsed-session',
-        session_token: 'parsed-token',
-        created_at: TEST_DATE_ISO,
-        expires_at: EXPIRES_DATE_ISO
+    test.each([
+      ['expired 1 hour ago', -3600000, null],
+      ['expires exactly now', 0, null],
+      ['expires 1ms in future', 1, 'session'],
+      ['expires 1 hour in future', 3600000, 'session']
+    ])(
+      'Should handle session expiry: %s',
+      async (_, timeOffset, expectedResult) => {
+        const sessionData = createMockSession({
+          expires_at: new Date(TEST_DATE.getTime() + timeOffset).toISOString()
+        })
+        mockRedisClient.get.mockResolvedValueOnce(JSON.stringify(sessionData))
+
+        const result = await (await getSession())('test-session')
+
+        if (expectedResult === 'session') {
+          expect(result).toEqual(sessionData)
+        } else {
+          expect(result).toBeNull()
+        }
       }
-      mockRedisClient.get.mockResolvedValueOnce(JSON.stringify(mockSessionData))
+    )
 
-      const { getSession } = await import('./session-manager.js')
-      const result = await getSession('parsed-session')
+    test.each([
+      [
+        'missing expires_at field',
+        {
+          session_id: 'malformed-session',
+          session_token: 'malformed-token',
+          created_at: TEST_DATE_ISO
+        }
+      ],
+      [
+        'invalid expires_at format',
+        createMockSession({ expires_at: 'not-a-valid-date' })
+      ]
+    ])(
+      'Should handle malformed session data: %s',
+      async (testName, sessionData) => {
+        mockRedisClient.get.mockResolvedValueOnce(JSON.stringify(sessionData))
 
-      expect(result).toEqual(mockSessionData)
-      expect(typeof result).toBe('object')
-      expect(result.session_id).toBe('parsed-session')
-    })
-
-    test('Should handle Redis errors gracefully', async () => {
-      const redisError = new Error('Redis get failed')
-      mockRedisClient.get.mockRejectedValueOnce(redisError)
-
-      const { getSession } = await import('./session-manager.js')
-
-      await expect(getSession('error-session')).rejects.toThrow(
-        'Redis get failed'
-      )
-    })
+        const result = await (await getSession())('test-session')
+        expect(result).toBeNull()
+      }
+    )
   })
 
   describe('deleteSession', () => {
     test('Should remove session from Redis with correct key', async () => {
       mockRedisClient.del.mockResolvedValueOnce(1)
-
-      const { deleteSession } = await import('./session-manager.js')
-      const result = await deleteSession('delete-session-id')
+      const result = await (await deleteSession())('delete-session-id')
 
       expect(mockRedisClient.del).toHaveBeenCalledWith(
         'session:delete-session-id'
@@ -263,65 +279,42 @@ describe('session-manager', () => {
       expect(result).toBe(1)
     })
 
-    test('Should clear session cookie when h is provided', async () => {
-      mockRedisClient.del.mockResolvedValueOnce(1)
+    test.each([
+      ['with h provided', true, true],
+      ['without h provided', false, false]
+    ])(
+      'Should handle cookie clearing %s',
+      async (_, provideH, expectUnstate) => {
+        mockRedisClient.del.mockResolvedValueOnce(1)
+        await (
+          await deleteSession()
+        )('test-session', provideH ? mockH : null)
 
-      const { deleteSession } = await import('./session-manager.js')
-      await deleteSession('session-with-cookie', mockH)
+        if (expectUnstate) {
+          expect(mockH.unstate).toHaveBeenCalledWith('session')
+        } else {
+          expect(mockH.unstate).not.toHaveBeenCalled()
+        }
+      }
+    )
 
-      expect(mockH.unstate).toHaveBeenCalledWith('session')
+    test.each([
+      ['Redis deletion succeeds', 1],
+      ['Session does not exist', 0]
+    ])('Should return deletion count: %s', async (_, deleteCount) => {
+      mockRedisClient.del.mockResolvedValueOnce(deleteCount)
+      const result = await (await deleteSession())('test-session')
+      expect(result).toBe(deleteCount)
     })
 
-    test('Should not clear cookie when h is not provided', async () => {
-      mockRedisClient.del.mockResolvedValueOnce(1)
-
-      const { deleteSession } = await import('./session-manager.js')
-      await deleteSession('session-without-cookie')
-
-      expect(mockH.unstate).not.toHaveBeenCalled()
-    })
-
-    test('Should handle Redis deletion failures gracefully', async () => {
+    test('Should handle Redis deletion failures but still clear cookie', async () => {
       const redisError = new Error('Redis delete failed')
       mockRedisClient.del.mockRejectedValueOnce(redisError)
 
-      const { deleteSession } = await import('./session-manager.js')
-
-      await expect(deleteSession('failing-session', mockH)).rejects.toThrow(
-        'Redis delete failed'
-      )
-    })
-
-    test('Should still clear cookie even if Redis deletion fails', async () => {
-      const redisError = new Error('Redis delete failed')
-      mockRedisClient.del.mockRejectedValueOnce(redisError)
-
-      const { deleteSession } = await import('./session-manager.js')
-
-      await expect(deleteSession('failing-session', mockH)).rejects.toThrow(
-        'Redis delete failed'
-      )
-
-      // Cookie should still be cleared despite Redis failure
+      await expect(
+        (await deleteSession())('failing-session', mockH)
+      ).rejects.toThrow('Redis delete failed')
       expect(mockH.unstate).toHaveBeenCalledWith('session')
-    })
-
-    test('Should return number of deleted keys on success', async () => {
-      mockRedisClient.del.mockResolvedValueOnce(1)
-
-      const { deleteSession } = await import('./session-manager.js')
-      const result = await deleteSession('successful-delete')
-
-      expect(result).toBe(1)
-    })
-
-    test('Should handle case when session does not exist in Redis', async () => {
-      mockRedisClient.del.mockResolvedValueOnce(0) // 0 keys deleted
-
-      const { deleteSession } = await import('./session-manager.js')
-      const result = await deleteSession('non-existent-session')
-
-      expect(result).toBe(0)
     })
   })
 })

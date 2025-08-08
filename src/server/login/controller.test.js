@@ -111,7 +111,7 @@ describe('#loginController', () => {
       const { showLoginFormController } = await import('./controller.js')
       const result = await showLoginFormController.handler(mockRequest, mockH)
 
-      expect(mockH.redirect).toHaveBeenCalledWith('/')
+      expect(mockH.redirect).toHaveBeenCalledWith('/upload-document')
       expect(result).toBe('redirect-response')
     })
 
@@ -164,7 +164,7 @@ describe('#loginController', () => {
       })
 
       expect(statusCode).toBe(statusCodes.redirect)
-      expect(headers.location).toBe('/')
+      expect(headers.location).toBe('/upload-document')
     })
 
     test('Should handle OAuth error response from Azure AD', async () => {

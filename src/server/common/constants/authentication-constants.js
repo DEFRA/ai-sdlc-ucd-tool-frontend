@@ -18,7 +18,7 @@ export const AUTHENTICATION_MESSAGES = {
 }
 
 export const AUTHENTICATION_ROUTES = {
-  HOME_REDIRECT_PATH: '/',
+  HOME_REDIRECT_PATH: '/upload-document',
   LOGIN_PATH: '/login',
   AUTH_CALLBACK_PATH: '/auth/callback'
 }

@@ -85,14 +85,47 @@ function setCookieWithSessionId(h, sessionId) {
 }
 
 /**
- * Retrieves session data from Redis
+ * Retrieves and validates session data from Redis
  * @param {string} sessionId - The session ID
- * @returns {Promise<Object|null>} Session data or null if not found
+ * @returns {Promise<Object|null>} Session data if valid and not expired, null otherwise
  */
 export async function getSession(sessionId) {
-  const sessionKey = `session:${sessionId}`
-  const sessionData = await redisClient.get(sessionKey)
-  return sessionData ? JSON.parse(sessionData) : null
+  if (!sessionId) {
+    return null
+  }
+
+  try {
+    const sessionKey = `session:${sessionId}`
+    const sessionData = await redisClient.get(sessionKey)
+
+    if (!sessionData) {
+      return null
+    }
+
+    const session = JSON.parse(sessionData)
+
+    // Check if session has a valid expires_at field
+    if (!session.expires_at) {
+      return null
+    }
+
+    // Check if session has expired
+    const now = new Date()
+    const expiresAt = new Date(session.expires_at)
+
+    // Check if the expires_at date is invalid
+    if (isNaN(expiresAt.getTime())) {
+      return null
+    }
+
+    if (now >= expiresAt) {
+      return null
+    }
+
+    return session
+  } catch (error) {
+    return null
+  }
 }
 
 /**
