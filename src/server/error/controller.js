@@ -10,12 +10,6 @@ export const errorController = {
     try {
       const { error, message } = request.query || {}
 
-      // For testing template failure scenario
-      const templateError = request.query.template_error
-      if (templateError) {
-        throw new Error('Template rendering failed')
-      }
-
       const errorMessage = message || ERROR_MESSAGES.DEFAULT_ERROR
       const showPossibleReasons = !message
 

@@ -71,20 +71,5 @@ describe('#errorController', () => {
       expect(result).toContain('Check with your team')
       expect(result).toContain('Contact the AI-SDLC team')
     })
-
-    test('Should render fallback plain text error if template fails', async () => {
-      // This test simulates a template rendering failure
-      // We'll mock the view handler to throw an error
-      const mockRequest = {
-        method: 'GET',
-        url: '/error?template_error=true'
-      }
-
-      const { result, statusCode } = await server.inject(mockRequest)
-
-      // When template fails, we expect a plain text fallback
-      expect(statusCode).toBe(statusCodes.ok)
-      expect(result).toContain('An error occurred. Please try again.')
-    })
   })
 })
