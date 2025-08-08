@@ -1,13 +1,55 @@
 {% extends 'layouts/page.njk' %}
 
-{% block content %}
-  {{ appHeading({
-    text: heading
-  }) }}
+{% block pageTitle %}{{ pageTitle | default('Error') }} | {{ serviceName }}{% endblock %}
 
-  <div class="govuk-grid-row">
-    <div class="govuk-grid-column-two-thirds">
-      <p>{{ message }}</p>
-    </div>
+{% block content %}
+  <div class="govuk-width-container">
+    <main class="govuk-main-wrapper govuk-main-wrapper--l" id="main-content" role="main">
+      <div class="govuk-grid-row">
+        <div class="govuk-grid-column-two-thirds">
+          
+          <h1 class="govuk-heading-xl">
+            {% if heading %}
+              {{ heading }}
+            {% else %}
+              {{ pageTitle }}
+            {% endif %}
+          </h1>
+          
+          <p class="govuk-body-l">
+            {% if message %}
+              {{ message }}
+            {% else %}
+              {{ errorMessage }}
+            {% endif %}
+          </p>
+          
+          {% if showPossibleReasons %}
+          <h2 class="govuk-heading-l">{{ possibleReasonsTitle }}</h2>
+          <ul class="govuk-list govuk-list--bullet">
+            {% for reason in possibleReasons %}
+            <li>{{ reason }}</li>
+            {% endfor %}
+          </ul>
+          {% endif %}
+          
+          {% if whatYouCanDoTitle %}
+          <h2 class="govuk-heading-l">{{ whatYouCanDoTitle }}</h2>
+          <ul class="govuk-list govuk-list--bullet">
+            {% for action in errorActions %}
+            <li>{{ action }}</li>
+            {% endfor %}
+          </ul>
+          {% endif %}
+          
+          {% if retryLink %}
+          <p class="govuk-body">
+            <a href="{{ retryLink }}" class="govuk-link">{{ retryText }}</a>
+          </p>
+          {% endif %}
+          
+        </div>
+      </div>
+    </main>
   </div>
 {% endblock %}

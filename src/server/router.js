@@ -4,6 +4,7 @@ import { health } from './health/index.js'
 import { root } from './root/index.js'
 import { login } from './login/index.js'
 import { uploadDocument } from './upload-document/index.js'
+import { error } from './error/index.js'
 import { serveStaticFiles } from './common/helpers/serve-static-files.js'
 
 export const router = {
@@ -16,7 +17,7 @@ export const router = {
       await server.register([health])
 
       // Application specific routes, add your own routes here
-      await server.register([root, login, uploadDocument])
+      await server.register([root, login, uploadDocument, error])
 
       // Static assets
       await server.register([serveStaticFiles])
