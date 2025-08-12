@@ -75,7 +75,7 @@ function setCookieWithSessionId(h, sessionId) {
     ttl: config.get('session.cookie.ttl'),
     isSecure: config.get('session.cookie.secure'),
     isHttpOnly: true,
-    isSameSite: 'Strict',
+    isSameSite: 'Lax',
     path: '/',
     password: config.get('session.cookie.password'),
     encoding: 'iron'

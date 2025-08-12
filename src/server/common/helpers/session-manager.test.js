@@ -150,7 +150,7 @@ describe('session-manager', () => {
         ttl: SESSION_TTL_MS,
         isSecure: true,
         isHttpOnly: true,
-        isSameSite: 'Strict',
+        isSameSite: 'Lax',
         path: '/',
         password: MOCK_COOKIE_PASSWORD,
         encoding: 'iron'
