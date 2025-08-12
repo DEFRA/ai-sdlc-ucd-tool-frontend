@@ -1,5 +1,9 @@
 import { vi } from 'vitest'
 import { createServer } from '../server.js'
+import {
+  createMockRequest,
+  createMockH
+} from '../common/test-helpers/mock-request.js'
 
 // Mock the buildRedisClient function to return our mock
 vi.mock('../common/helpers/redis-client.js', () => {
@@ -52,8 +56,12 @@ describe('#uploadDocumentController', () => {
       })
 
       // Mock request with session state (HAPI handles cookie parsing)
-      const mockRequest = { state: { session: 'valid-session-id' } }
-      const mockH = { view: vi.fn().mockReturnValue('upload-document-content') }
+      const mockRequest = createMockRequest({
+        state: { session: 'valid-session-id' }
+      })
+      const mockH = createMockH({
+        view: vi.fn().mockReturnValue('upload-document-content')
+      })
 
       // Call controller directly to test logic
       const { uploadDocumentController } = await import('./controller.js')
@@ -72,8 +80,10 @@ describe('#uploadDocumentController', () => {
       vi.mocked(getSession).mockResolvedValueOnce(null)
 
       // Mock request with session state (HAPI handles cookie parsing)
-      const mockRequest = { state: { session: 'invalid-session-id' } }
-      const mockH = { redirect: vi.fn().mockReturnValue('redirect-response') }
+      const mockRequest = createMockRequest({
+        state: { session: 'invalid-session-id' }
+      })
+      const mockH = createMockH()
 
       // Call controller directly to test logic
       const { uploadDocumentController } = await import('./controller.js')
@@ -86,8 +96,8 @@ describe('#uploadDocumentController', () => {
 
     test('Should redirect to root route when no session cookie present', async () => {
       // Mock request without session state
-      const mockRequest = { state: {} }
-      const mockH = { redirect: vi.fn().mockReturnValue('redirect-response') }
+      const mockRequest = createMockRequest()
+      const mockH = createMockH()
 
       // Call controller directly to test logic
       const { uploadDocumentController } = await import('./controller.js')
@@ -107,8 +117,10 @@ describe('#uploadDocumentController', () => {
       )
 
       // Mock request with session state
-      const mockRequest = { state: { session: 'some-session-id' } }
-      const mockH = { redirect: vi.fn().mockReturnValue('redirect-response') }
+      const mockRequest = createMockRequest({
+        state: { session: 'some-session-id' }
+      })
+      const mockH = createMockH()
 
       // Call controller directly to test logic
       const { uploadDocumentController } = await import('./controller.js')
@@ -130,8 +142,12 @@ describe('#uploadDocumentController', () => {
       })
 
       // Mock request with session state
-      const mockRequest = { state: { session: 'test-session-id' } }
-      const mockH = { view: vi.fn().mockReturnValue('upload-document-content') }
+      const mockRequest = createMockRequest({
+        state: { session: 'test-session-id' }
+      })
+      const mockH = createMockH({
+        view: vi.fn().mockReturnValue('upload-document-content')
+      })
 
       // Call controller directly to test logic
       const { uploadDocumentController } = await import('./controller.js')

@@ -12,7 +12,9 @@ describe('rootController', () => {
   beforeEach(() => {
     mockRequest = {
       state: {},
-      log: vi.fn()
+      log: vi.fn(),
+      info: { id: 'test-request-id' },
+      headers: {}
     }
     mockH = {
       redirect: vi.fn()
@@ -65,9 +67,15 @@ describe('rootController', () => {
       await rootController.handler(mockRequest, mockH)
 
       expect(getSession).toHaveBeenCalledWith('test-session-id')
-      expect(mockRequest.log).toHaveBeenCalledWith('error', {
-        message: 'Failed to validate session',
-        error: 'Redis connection failed'
+      expect(mockRequest.log).toHaveBeenCalledWith(['error'], {
+        level: 'ERROR',
+        message: 'Session validation error occurred',
+        requestId: 'test-request-id',
+        traceId: 'test-request-id',
+        errorCode: 'SESSION_VALIDATION_ERROR',
+        errorMessage: 'Redis connection failed',
+        decision: 'REDIRECT_TO_LOGIN',
+        reason: 'Exception during session validation'
       })
       expect(mockH.redirect).toHaveBeenCalledWith(
         AUTHENTICATION_ROUTES.LOGIN_PATH
