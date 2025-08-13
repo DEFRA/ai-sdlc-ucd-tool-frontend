@@ -2,6 +2,10 @@ import { vi } from 'vitest'
 import { statusCodes } from '../common/constants/status-codes.js'
 import { AUTHENTICATION_MESSAGES } from '../common/constants/authentication-constants.js'
 import { createServer } from '../server.js'
+import {
+  createMockRequest,
+  createMockH
+} from '../common/test-helpers/mock-request.js'
 
 // Mock the buildRedisClient function to return our mock
 vi.mock('../common/helpers/redis-client.js', () => {
@@ -104,8 +108,10 @@ describe('#loginController', () => {
       })
 
       // Mock that request.state.session has a session ID (HAPI handles cookie parsing)
-      const mockRequest = { state: { session: 'existing-session' } }
-      const mockH = { redirect: vi.fn().mockReturnValue('redirect-response') }
+      const mockRequest = createMockRequest({
+        state: { session: 'existing-session' }
+      })
+      const mockH = createMockH()
 
       // Call controller directly to test logic
       const { showLoginFormController } = await import('./controller.js')
