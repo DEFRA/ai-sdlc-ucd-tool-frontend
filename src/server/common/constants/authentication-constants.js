@@ -4,7 +4,7 @@
  */
 
 export const AUTHENTICATION_MESSAGES = {
-  INVALID_PASSWORD: 'Invalid password',
+  INVALID_PASSWORD_MESSAGE: 'Invalid password',
   SUCCESS_MESSAGE: 'Authentication successful',
   SERVICE_UNAVAILABLE:
     'Service temporarily unavailable. Please try again in a few moments.',
@@ -20,7 +20,8 @@ export const AUTHENTICATION_MESSAGES = {
 export const AUTHENTICATION_ROUTES = {
   HOME_REDIRECT_PATH: '/upload-document',
   LOGIN_PATH: '/login',
-  AUTH_CALLBACK_PATH: '/auth/callback'
+  AUTH_CALLBACK_PATH: '/auth/callback',
+  LOGIN_VIEW_PATH: 'login/index'
 }
 
 export const HTTP_HEADER_NAMES = {

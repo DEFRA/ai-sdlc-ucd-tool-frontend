@@ -1,3 +1,3 @@
-export function buildNavigation(request) {
+export function buildNavigation(_request) {
   return []
 }
