@@ -55,7 +55,6 @@ vi.mock('./redis-client.js', () => ({
 }))
 
 describe('session-manager', () => {
-  let mockRequest
   let mockH
 
   // Helper functions to reduce repetition
@@ -89,7 +88,6 @@ describe('session-manager', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
-    mockRequest = {}
     mockH = {
       state: vi.fn(),
       unstate: vi.fn()
@@ -106,7 +104,7 @@ describe('session-manager', () => {
   describe('createSession', () => {
     test('Should create unique session ID', async () => {
       setupRedisSuccess()
-      const result = await (await createSession())(mockRequest, mockH)
+      const result = await (await createSession())(mockH)
       expect(result.session_id).toBe(MOCK_SESSION_ID)
     })
 
@@ -114,7 +112,7 @@ describe('session-manager', () => {
       setupRedisSuccess()
       await (
         await createSession()
-      )(mockRequest, mockH)
+      )(mockH)
 
       expect(jwt.sign).toHaveBeenCalledWith(
         {
@@ -130,7 +128,7 @@ describe('session-manager', () => {
       setupRedisSuccess()
       await (
         await createSession()
-      )(mockRequest, mockH)
+      )(mockH)
 
       expect(mockRedisClient.set).toHaveBeenCalledWith(
         `session:${MOCK_SESSION_ID}`,
@@ -144,7 +142,7 @@ describe('session-manager', () => {
       setupRedisSuccess()
       await (
         await createSession()
-      )(mockRequest, mockH)
+      )(mockH)
 
       expect(mockH.state).toHaveBeenCalledWith('session', MOCK_SESSION_ID, {
         ttl: SESSION_TTL_MS,
@@ -159,7 +157,7 @@ describe('session-manager', () => {
 
     test('Should return session data object with all required fields', async () => {
       setupRedisSuccess()
-      const result = await (await createSession())(mockRequest, mockH)
+      const result = await (await createSession())(mockH)
       expect(result).toEqual(expectSessionData())
     })
 
@@ -174,7 +172,7 @@ describe('session-manager', () => {
         mockRedisClient.del.mockRejectedValueOnce(new Error('Cleanup failed'))
       }
 
-      await expect((await createSession())(mockRequest, mockH)).rejects.toThrow(
+      await expect((await createSession())(mockH)).rejects.toThrow(
         'Session creation failed'
       )
       expect(mockRedisClient.del).toHaveBeenCalledWith(

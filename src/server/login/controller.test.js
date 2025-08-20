@@ -256,10 +256,7 @@ describe('#loginController', () => {
         url: '/auth/callback?code=mock-auth-code&state=mock-state'
       })
 
-      expect(createSession).toHaveBeenCalledWith(
-        expect.any(Object),
-        expect.any(Object)
-      )
+      expect(createSession).toHaveBeenCalledWith(expect.any(Object))
     })
   })
 })

@@ -13,11 +13,10 @@ const redisClient = buildRedisClient(config.get('redis'))
 
 /**
  * Creates a new session for the authenticated user
- * @param {Object} request - Hapi request object
  * @param {Object} h - Hapi response toolkit
  * @returns {Promise<Object>} Session data with token
  */
-export async function createSession(request, h) {
+export async function createSession(h) {
   const sessionId = crypto.randomUUID()
   const sessionKey = `session:${sessionId}`
   const ttlSeconds = config.get('session.cache.ttl') / 1000
