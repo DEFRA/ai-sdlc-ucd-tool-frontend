@@ -228,6 +228,24 @@ describe('#loginController', () => {
       expect(result).toContain('govuk-error-message')
     })
 
+    test('Should show error when PKCE verifier cannot be retrieved', async () => {
+      const { retrievePkceVerifier } = await import(
+        '../authentication/oauth-state-storage.js'
+      )
+      retrievePkceVerifier.mockResolvedValueOnce(null)
+
+      const { statusCode, result } = await server.inject({
+        method: 'GET',
+        url: '/auth/callback?code=mock-auth-code&state=mock-state'
+      })
+
+      expect(statusCode).toBe(statusCodes.ok)
+      expect(result).toContain(
+        'Authentication request expired. Please try again.'
+      )
+      expect(result).toContain('govuk-error-message')
+    })
+
     test('Should handle token exchange failure', async () => {
       const { exchangeCodeForTokens } = await import(
         '../authentication/azure-ad-token-client.js'
@@ -257,6 +275,22 @@ describe('#loginController', () => {
       })
 
       expect(createSession).toHaveBeenCalledWith(expect.any(Object))
+    })
+
+    test('Should handle session creation failure and show error', async () => {
+      const { createSession } = await import(
+        '../common/helpers/session-manager.js'
+      )
+      createSession.mockRejectedValueOnce(new Error('Session creation failed'))
+
+      const { statusCode, result } = await server.inject({
+        method: 'GET',
+        url: '/auth/callback?code=mock-auth-code&state=mock-state'
+      })
+
+      expect(statusCode).toBe(statusCodes.ok)
+      expect(result).toContain('Authentication failed. Please try again.')
+      expect(result).toContain('govuk-error-message')
     })
   })
 })
