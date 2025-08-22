@@ -1,9 +1,10 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { rootController } from './controller.js'
-import { getSession } from '../common/helpers/session-manager.js'
 import { AUTHENTICATION_ROUTES } from '../common/constants/authentication-constants.js'
+import { getSession } from '../login/authCallbackService.js'
 
 vi.mock('../common/helpers/session-manager.js')
+vi.mock('../login/authCallbackService.js')
 
 describe('rootController', () => {
   let mockRequest

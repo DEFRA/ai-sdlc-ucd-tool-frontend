@@ -1,4 +1,4 @@
-import { getSession } from '../common/helpers/session-manager.js'
+import { getSession } from '../login/authCallbackService.js'
 
 /**
  * Controller for handling upload document requests

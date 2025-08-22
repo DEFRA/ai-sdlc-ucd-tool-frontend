@@ -1,5 +1,5 @@
-import { getSession } from '../common/helpers/session-manager.js'
 import { AUTHENTICATION_ROUTES } from '../common/constants/authentication-constants.js'
+import { getSession } from '../login/authCallbackService.js'
 
 /**
  * Root route controller with session validation

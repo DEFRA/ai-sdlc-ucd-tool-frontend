@@ -2,19 +2,17 @@ import {
   AUTHENTICATION_MESSAGES,
   AUTHENTICATION_ROUTES
 } from '../common/constants/authentication-constants.js'
-import { createSession, getSession } from '../common/helpers/session-manager.js'
 import {
-  generateStateParameter,
-  generatePkceChallenge
+  generatePkceChallenge,
+  generateStateParameter
 } from '../authentication/oauth-crypto-service.js'
 import {
-  storeStateParameter,
   storePkceVerifier,
-  validateStateParameter,
-  retrievePkceVerifier
+  storeStateParameter
 } from '../authentication/oauth-state-storage.js'
 import { buildAuthorizationUrl } from '../authentication/azure-ad-url-builder.js'
-import { exchangeCodeForTokens } from '../authentication/azure-ad-token-client.js'
+import { processAuthCallback, getSession } from './authCallbackService.js'
+import { setSessionCookie } from '../authentication/cookie-manager.js'
 
 /**
  * Login controller for GET /login - redirects to Azure AD
@@ -63,6 +61,7 @@ export const showLoginFormController = {
       })
 
       await storeStateParameter(state)
+
       await storePkceVerifier(state, codeVerifier)
 
       const authorizationUrl = buildAuthorizationUrl(state, codeChallenge)
@@ -96,68 +95,6 @@ export const showLoginFormController = {
       })
     }
   }
-}
-
-/**
- * Processes OAuth authentication flow after initial validation
- * @private
- */
-async function processOAuthFlow(code, state, h, request, requestId, traceId) {
-  const isValidState = await validateStateParameter(state)
-  if (!isValidState) {
-    request.log(['warn'], {
-      level: 'WARN',
-      message: 'OAuth state validation failed',
-      requestId,
-      traceId,
-      decision: 'SHOW_ERROR_PAGE',
-      reason: 'Invalid or expired state parameter'
-    })
-    return h.view(AUTHENTICATION_ROUTES.LOGIN_VIEW_PATH, {
-      pageTitle: 'Sign in',
-      errorMessage: AUTHENTICATION_MESSAGES.AUTHENTICATION_REQUEST_EXPIRED,
-      hasError: true
-    })
-  }
-
-  const codeVerifier = await retrievePkceVerifier(state)
-  if (!codeVerifier) {
-    request.log(['warn'], {
-      level: 'WARN',
-      message: 'PKCE verifier not found',
-      requestId,
-      traceId,
-      decision: 'SHOW_ERROR_PAGE',
-      reason: 'Missing or expired PKCE verifier'
-    })
-    return h.view(AUTHENTICATION_ROUTES.LOGIN_VIEW_PATH, {
-      pageTitle: 'Sign in',
-      errorMessage: AUTHENTICATION_MESSAGES.AUTHENTICATION_REQUEST_EXPIRED,
-      hasError: true
-    })
-  }
-  request.log(['debug'], {
-    level: 'DEBUG',
-    message: 'Exchanging authorization code for tokens',
-    requestId,
-    traceId
-  })
-
-  await exchangeCodeForTokens(code, codeVerifier)
-  await createSession(h)
-
-  request.log(['info'], {
-    level: 'INFO',
-    message: 'User authentication completed',
-    requestId,
-    traceId,
-    authMethod: 'oauth2',
-    success: true,
-    decision: 'REDIRECT_TO_HOME',
-    reason: 'Authentication successful'
-  })
-
-  return h.redirect(AUTHENTICATION_ROUTES.HOME_REDIRECT_PATH)
 }
 
 /**
@@ -218,7 +155,48 @@ export const authCallbackController = {
     }
 
     try {
-      return await processOAuthFlow(code, state, h, request, requestId, traceId)
+      // Process authentication callback through service
+      const result = await processAuthCallback(code, state)
+
+      if (!result.success) {
+        // Handle validation failures
+        const errorMessage =
+          result.error === 'INVALID_STATE' || result.error === 'MISSING_PKCE'
+            ? AUTHENTICATION_MESSAGES.AUTHENTICATION_REQUEST_EXPIRED
+            : AUTHENTICATION_MESSAGES.AUTHENTICATION_FAILED
+
+        request.log(['warn'], {
+          level: 'WARN',
+          message: result.message,
+          requestId,
+          traceId,
+          errorCode: result.error,
+          decision: 'SHOW_ERROR_PAGE',
+          reason: result.message
+        })
+
+        return h.view(AUTHENTICATION_ROUTES.LOGIN_VIEW_PATH, {
+          pageTitle: 'Sign in',
+          errorMessage,
+          hasError: true
+        })
+      }
+
+      // Set session cookie with the session ID from the service
+      setSessionCookie(h, result.sessionData.session_id)
+
+      request.log(['info'], {
+        level: 'INFO',
+        message: 'User authentication completed',
+        requestId,
+        traceId,
+        authMethod: 'oauth2',
+        success: true,
+        decision: 'REDIRECT_TO_HOME',
+        reason: 'Authentication successful'
+      })
+
+      return h.redirect(AUTHENTICATION_ROUTES.HOME_REDIRECT_PATH)
     } catch (caughtError) {
       request.log(['error'], {
         level: 'ERROR',
