@@ -1,14 +1,14 @@
-import { vi } from 'vitest'
+import { describe, test, vi } from 'vitest'
 import {
-  initiateOauthFlow,
   authenticateWithCallback,
-  getSessionFromId
+  getSessionFromId,
+  initiateOauthFlow
 } from './authenticationService.js'
 import {
-  validateStateParameter,
   retrievePkceVerifier,
+  storePkceVerifier,
   storeStateParameter,
-  storePkceVerifier
+  validateStateParameter
 } from './oauth-state-storage.js'
 import { exchangeCodeForTokens } from './azure-ad-token-client.js'
 import {
@@ -65,7 +65,7 @@ describe('authenticationService', () => {
       vi.clearAllMocks()
     })
 
-    it('generates security parameters and returns authorization URL', async () => {
+    test('generates security parameters and returns authorization URL', async () => {
       // Given: Security parameters will be generated
       vi.mocked(generateStateParameter).mockReturnValue(MOCK_STATE)
       vi.mocked(generatePkceChallenge).mockReturnValue({
@@ -100,7 +100,7 @@ describe('authenticationService', () => {
       )
     })
 
-    it('throws error when state storage fails', async () => {
+    test('throws error when state storage fails', async () => {
       // Given: State storage will fail
       vi.mocked(generateStateParameter).mockReturnValue(MOCK_STATE)
       vi.mocked(generatePkceChallenge).mockReturnValue({
@@ -120,7 +120,7 @@ describe('authenticationService', () => {
       expect(buildAuthorizationUrl).not.toHaveBeenCalled()
     })
 
-    it('throws error when PKCE storage fails', async () => {
+    test('throws error when PKCE storage fails', async () => {
       // Given: PKCE storage will fail
       vi.mocked(generateStateParameter).mockReturnValue(MOCK_STATE)
       vi.mocked(generatePkceChallenge).mockReturnValue({
@@ -145,7 +145,7 @@ describe('authenticationService', () => {
       vi.clearAllMocks()
     })
 
-    it('returns session data when authentication is successful', async () => {
+    test('returns session data when authentication is successful', async () => {
       // Given: Valid OAuth callback parameters
       const code = MOCK_AUTH_CODE
       const state = MOCK_STATE
@@ -187,7 +187,7 @@ describe('authenticationService', () => {
       expect(createSession).toHaveBeenCalled()
     })
 
-    it('throws error with INVALID_STATE code when state validation fails', async () => {
+    test('throws error with INVALID_STATE code when state validation fails', async () => {
       // Given: Invalid state parameter
       const code = MOCK_AUTH_CODE
       const state = 'invalid-state'
@@ -209,7 +209,7 @@ describe('authenticationService', () => {
       expect(createSession).not.toHaveBeenCalled()
     })
 
-    it('throws error with MISSING_PKCE code when PKCE verifier cannot be retrieved', async () => {
+    test('throws error with MISSING_PKCE code when PKCE verifier cannot be retrieved', async () => {
       // Given: Valid state but missing PKCE verifier
       const code = MOCK_AUTH_CODE
       const state = MOCK_STATE
@@ -234,7 +234,7 @@ describe('authenticationService', () => {
       expect(createSession).not.toHaveBeenCalled()
     })
 
-    it('throws error when token exchange fails', async () => {
+    test('throws error when token exchange fails', async () => {
       // Given: Valid parameters but token exchange will fail
       const code = MOCK_AUTH_CODE
       const state = MOCK_STATE
@@ -257,7 +257,7 @@ describe('authenticationService', () => {
       expect(createSession).not.toHaveBeenCalled()
     })
 
-    it('throws error when session creation fails', async () => {
+    test('throws error when session creation fails', async () => {
       // Given: Valid parameters but session creation will fail
       const code = MOCK_AUTH_CODE
       const state = MOCK_STATE
@@ -287,7 +287,7 @@ describe('authenticationService', () => {
       vi.clearAllMocks()
     })
 
-    it('retrieves session data from repository when session ID is provided', async () => {
+    test('retrieves session data from repository when session ID is provided', async () => {
       // Given: A session exists
       const mockSessionData = {
         session_id: MOCK_SESSION_ID,
@@ -305,7 +305,7 @@ describe('authenticationService', () => {
       expect(getSessionFromRepository).toHaveBeenCalledWith(MOCK_SESSION_ID)
     })
 
-    it('returns null when session not found', async () => {
+    test('returns null when session not found', async () => {
       // Given: Session does not exist
       const sessionId = 'non-existent-session'
       vi.mocked(getSessionFromRepository).mockResolvedValueOnce(null)
