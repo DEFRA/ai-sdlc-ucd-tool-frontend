@@ -31,7 +31,7 @@ describe('#azure-ad-token-client', () => {
       }
 
       // Mock config validation and URL building
-      vi.mocked(validateAndGetAzureAdConfig).mockReturnValue({
+      validateAndGetAzureAdConfig.mockReturnValue({
         baseUrl: 'https://login.microsoftonline.com',
         clientId: 'test-client-id',
         clientSecret: 'test-client-secret-xyz',
@@ -40,7 +40,7 @@ describe('#azure-ad-token-client', () => {
         tokenEndpoint: 'oauth2/v2.0/token'
       })
 
-      vi.mocked(buildAzureAdEndpointUrl).mockReturnValue(
+      buildAzureAdEndpointUrl.mockReturnValue(
         'https://login.microsoftonline.com/test-tenant-id/oauth2/v2.0/token'
       )
 
@@ -82,7 +82,7 @@ describe('#azure-ad-token-client', () => {
     })
 
     test('Should handle special characters in parameters', async () => {
-      vi.mocked(validateAndGetAzureAdConfig).mockReturnValue({
+      validateAndGetAzureAdConfig.mockReturnValue({
         baseUrl: 'https://auth.example.com',
         clientId: 'client&id=special',
         clientSecret: 'secret+with/chars',
@@ -91,7 +91,7 @@ describe('#azure-ad-token-client', () => {
         tokenEndpoint: 'token'
       })
 
-      vi.mocked(buildAzureAdEndpointUrl).mockReturnValue(
+      buildAzureAdEndpointUrl.mockReturnValue(
         'https://auth.example.com/tenant-id/token'
       )
 
@@ -116,7 +116,7 @@ describe('#azure-ad-token-client', () => {
     })
 
     test('Should throw error when configuration validation fails', async () => {
-      vi.mocked(validateAndGetAzureAdConfig).mockImplementation(() => {
+      validateAndGetAzureAdConfig.mockImplementation(() => {
         throw new Error(
           'Azure AD configuration is incomplete. Missing: clientSecret'
         )
@@ -128,7 +128,7 @@ describe('#azure-ad-token-client', () => {
     })
 
     test('Should throw error when token exchange fails with 400 status', async () => {
-      vi.mocked(validateAndGetAzureAdConfig).mockReturnValue({
+      validateAndGetAzureAdConfig.mockReturnValue({
         baseUrl: 'https://auth.com',
         clientId: 'client',
         clientSecret: 'secret',
@@ -137,9 +137,7 @@ describe('#azure-ad-token-client', () => {
         tokenEndpoint: 'token'
       })
 
-      vi.mocked(buildAzureAdEndpointUrl).mockReturnValue(
-        'https://auth.com/tenant/token'
-      )
+      buildAzureAdEndpointUrl.mockReturnValue('https://auth.com/tenant/token')
 
       const errorResponse = {
         error: 'invalid_grant',
@@ -158,7 +156,7 @@ describe('#azure-ad-token-client', () => {
     })
 
     test('Should throw error when token exchange fails with 401 status', async () => {
-      vi.mocked(validateAndGetAzureAdConfig).mockReturnValue({
+      validateAndGetAzureAdConfig.mockReturnValue({
         baseUrl: 'https://auth.com',
         clientId: 'client',
         clientSecret: 'wrong-secret',
@@ -167,9 +165,7 @@ describe('#azure-ad-token-client', () => {
         tokenEndpoint: 'token'
       })
 
-      vi.mocked(buildAzureAdEndpointUrl).mockReturnValue(
-        'https://auth.com/tenant/token'
-      )
+      buildAzureAdEndpointUrl.mockReturnValue('https://auth.com/tenant/token')
 
       fetch.mockResolvedValueOnce({
         ok: false,
@@ -185,7 +181,7 @@ describe('#azure-ad-token-client', () => {
     })
 
     test('Should throw error when fetch fails with network error', async () => {
-      vi.mocked(validateAndGetAzureAdConfig).mockReturnValue({
+      validateAndGetAzureAdConfig.mockReturnValue({
         baseUrl: 'https://auth.com',
         clientId: 'client',
         clientSecret: 'secret',
@@ -194,9 +190,7 @@ describe('#azure-ad-token-client', () => {
         tokenEndpoint: 'token'
       })
 
-      vi.mocked(buildAzureAdEndpointUrl).mockReturnValue(
-        'https://auth.com/tenant/token'
-      )
+      buildAzureAdEndpointUrl.mockReturnValue('https://auth.com/tenant/token')
 
       const networkError = new Error('Network connection failed')
       fetch.mockRejectedValueOnce(networkError)
@@ -207,7 +201,7 @@ describe('#azure-ad-token-client', () => {
     })
 
     test('Should throw error when response JSON parsing fails', async () => {
-      vi.mocked(validateAndGetAzureAdConfig).mockReturnValue({
+      validateAndGetAzureAdConfig.mockReturnValue({
         baseUrl: 'https://auth.com',
         clientId: 'client',
         clientSecret: 'secret',
@@ -216,9 +210,7 @@ describe('#azure-ad-token-client', () => {
         tokenEndpoint: 'token'
       })
 
-      vi.mocked(buildAzureAdEndpointUrl).mockReturnValue(
-        'https://auth.com/tenant/token'
-      )
+      buildAzureAdEndpointUrl.mockReturnValue('https://auth.com/tenant/token')
 
       fetch.mockResolvedValueOnce({
         ok: true,
@@ -231,7 +223,7 @@ describe('#azure-ad-token-client', () => {
     })
 
     test('Should include all required parameters in request body', async () => {
-      vi.mocked(validateAndGetAzureAdConfig).mockReturnValue({
+      validateAndGetAzureAdConfig.mockReturnValue({
         baseUrl: 'https://auth.com',
         clientId: 'client-123',
         clientSecret: 'secret-456',
@@ -240,7 +232,7 @@ describe('#azure-ad-token-client', () => {
         tokenEndpoint: 'token'
       })
 
-      vi.mocked(buildAzureAdEndpointUrl).mockReturnValue(
+      buildAzureAdEndpointUrl.mockReturnValue(
         'https://auth.com/tenant-789/token'
       )
 

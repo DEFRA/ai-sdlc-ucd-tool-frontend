@@ -67,18 +67,18 @@ describe('authenticationService', () => {
 
     test('generates security parameters and returns authorization URL', async () => {
       // Given: Security parameters will be generated
-      vi.mocked(generateStateParameter).mockReturnValue(MOCK_STATE)
-      vi.mocked(generatePkceChallenge).mockReturnValue({
+      generateStateParameter.mockReturnValue(MOCK_STATE)
+      generatePkceChallenge.mockReturnValue({
         codeVerifier: MOCK_CODE_VERIFIER,
         codeChallenge: MOCK_CODE_CHALLENGE
       })
 
       // And: Storage operations will succeed
-      vi.mocked(storeStateParameter).mockResolvedValueOnce(undefined)
-      vi.mocked(storePkceVerifier).mockResolvedValueOnce(undefined)
+      storeStateParameter.mockResolvedValueOnce(undefined)
+      storePkceVerifier.mockResolvedValueOnce(undefined)
 
       // And: Authorization URL will be built
-      vi.mocked(buildAuthorizationUrl).mockReturnValue(MOCK_AUTH_URL)
+      buildAuthorizationUrl.mockReturnValue(MOCK_AUTH_URL)
 
       // When: Initiating the OAuth flow
       const result = await initiateOauthFlow()
@@ -102,14 +102,12 @@ describe('authenticationService', () => {
 
     test('throws error when state storage fails', async () => {
       // Given: State storage will fail
-      vi.mocked(generateStateParameter).mockReturnValue(MOCK_STATE)
-      vi.mocked(generatePkceChallenge).mockReturnValue({
+      generateStateParameter.mockReturnValue(MOCK_STATE)
+      generatePkceChallenge.mockReturnValue({
         codeVerifier: MOCK_CODE_VERIFIER,
         codeChallenge: MOCK_CODE_CHALLENGE
       })
-      vi.mocked(storeStateParameter).mockRejectedValueOnce(
-        new Error('Storage failed')
-      )
+      storeStateParameter.mockRejectedValueOnce(new Error('Storage failed'))
 
       // When/Then: Initiating OAuth flow throws error
       await expect(initiateOauthFlow()).rejects.toThrow('Storage failed')
@@ -122,15 +120,13 @@ describe('authenticationService', () => {
 
     test('throws error when PKCE storage fails', async () => {
       // Given: PKCE storage will fail
-      vi.mocked(generateStateParameter).mockReturnValue(MOCK_STATE)
-      vi.mocked(generatePkceChallenge).mockReturnValue({
+      generateStateParameter.mockReturnValue(MOCK_STATE)
+      generatePkceChallenge.mockReturnValue({
         codeVerifier: MOCK_CODE_VERIFIER,
         codeChallenge: MOCK_CODE_CHALLENGE
       })
-      vi.mocked(storeStateParameter).mockResolvedValueOnce(undefined)
-      vi.mocked(storePkceVerifier).mockRejectedValueOnce(
-        new Error('PKCE storage failed')
-      )
+      storeStateParameter.mockResolvedValueOnce(undefined)
+      storePkceVerifier.mockRejectedValueOnce(new Error('PKCE storage failed'))
 
       // When/Then: Initiating OAuth flow throws error
       await expect(initiateOauthFlow()).rejects.toThrow('PKCE storage failed')
@@ -151,13 +147,13 @@ describe('authenticationService', () => {
       const state = MOCK_STATE
 
       // And: State validation passes
-      vi.mocked(validateStateParameter).mockResolvedValueOnce(true)
+      validateStateParameter.mockResolvedValueOnce(true)
 
       // And: PKCE verifier is retrieved successfully
-      vi.mocked(retrievePkceVerifier).mockResolvedValueOnce(MOCK_CODE_VERIFIER)
+      retrievePkceVerifier.mockResolvedValueOnce(MOCK_CODE_VERIFIER)
 
       // And: Token exchange succeeds
-      vi.mocked(exchangeCodeForTokens).mockResolvedValueOnce({
+      exchangeCodeForTokens.mockResolvedValueOnce({
         access_token: MOCK_ACCESS_TOKEN,
         refresh_token: MOCK_REFRESH_TOKEN
       })
@@ -169,7 +165,7 @@ describe('authenticationService', () => {
         created_at: new Date().toISOString(),
         expires_at: new Date(Date.now() + 3600000).toISOString()
       }
-      vi.mocked(createSession).mockResolvedValueOnce(mockSessionData)
+      createSession.mockResolvedValueOnce(mockSessionData)
 
       // When: Authenticating with callback
       const result = await authenticateWithCallback(code, state)
@@ -193,7 +189,7 @@ describe('authenticationService', () => {
       const state = 'invalid-state'
 
       // And: State validation fails
-      vi.mocked(validateStateParameter).mockResolvedValueOnce(false)
+      validateStateParameter.mockResolvedValueOnce(false)
 
       // When/Then: Authentication throws error
       await expect(authenticateWithCallback(code, state)).rejects.toMatchObject(
@@ -214,10 +210,10 @@ describe('authenticationService', () => {
       const state = MOCK_STATE
 
       // And: State validation passes
-      vi.mocked(validateStateParameter).mockResolvedValueOnce(true)
+      validateStateParameter.mockResolvedValueOnce(true)
 
       // And: PKCE verifier retrieval returns null
-      vi.mocked(retrievePkceVerifier).mockResolvedValueOnce(null)
+      retrievePkceVerifier.mockResolvedValueOnce(null)
 
       // When/Then: Authentication throws error
       await expect(authenticateWithCallback(code, state)).rejects.toMatchObject(
@@ -238,11 +234,11 @@ describe('authenticationService', () => {
       const state = MOCK_STATE
 
       // And: Validation passes
-      vi.mocked(validateStateParameter).mockResolvedValueOnce(true)
-      vi.mocked(retrievePkceVerifier).mockResolvedValueOnce(MOCK_CODE_VERIFIER)
+      validateStateParameter.mockResolvedValueOnce(true)
+      retrievePkceVerifier.mockResolvedValueOnce(MOCK_CODE_VERIFIER)
 
       // And: Token exchange fails
-      vi.mocked(exchangeCodeForTokens).mockRejectedValueOnce(
+      exchangeCodeForTokens.mockRejectedValueOnce(
         new Error('Token exchange failed')
       )
 
@@ -261,17 +257,15 @@ describe('authenticationService', () => {
       const state = MOCK_STATE
 
       // And: Validation and token exchange pass
-      vi.mocked(validateStateParameter).mockResolvedValueOnce(true)
-      vi.mocked(retrievePkceVerifier).mockResolvedValueOnce(MOCK_CODE_VERIFIER)
-      vi.mocked(exchangeCodeForTokens).mockResolvedValueOnce({
+      validateStateParameter.mockResolvedValueOnce(true)
+      retrievePkceVerifier.mockResolvedValueOnce(MOCK_CODE_VERIFIER)
+      exchangeCodeForTokens.mockResolvedValueOnce({
         access_token: MOCK_ACCESS_TOKEN,
         refresh_token: MOCK_REFRESH_TOKEN
       })
 
       // And: Session creation fails
-      vi.mocked(createSession).mockRejectedValueOnce(
-        new Error('Session creation failed')
-      )
+      createSession.mockRejectedValueOnce(new Error('Session creation failed'))
 
       // When/Then: Authentication throws error
       await expect(authenticateWithCallback(code, state)).rejects.toThrow(
@@ -293,7 +287,7 @@ describe('authenticationService', () => {
         created_at: new Date().toISOString(),
         expires_at: new Date(Date.now() + 3600000).toISOString()
       }
-      vi.mocked(getSessionFromRepository).mockResolvedValueOnce(mockSessionData)
+      getSessionFromRepository.mockResolvedValueOnce(mockSessionData)
 
       // When: Getting the session
       const result = await getSessionFromId(MOCK_SESSION_ID)
@@ -306,7 +300,7 @@ describe('authenticationService', () => {
     test('returns null when session not found', async () => {
       // Given: Session does not exist
       const sessionId = 'non-existent-session'
-      vi.mocked(getSessionFromRepository).mockResolvedValueOnce(null)
+      getSessionFromRepository.mockResolvedValueOnce(null)
 
       // When: Getting the session
       const result = await getSessionFromId(sessionId)

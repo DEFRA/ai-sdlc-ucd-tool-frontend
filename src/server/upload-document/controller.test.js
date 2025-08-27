@@ -47,7 +47,7 @@ describe('#uploadDocumentController', () => {
 
     test('Should display upload document interface for authenticated users', async () => {
       // Mock that getSession returns a valid session
-      vi.mocked(getSessionFromId).mockResolvedValueOnce({
+      getSessionFromId.mockResolvedValueOnce({
         session_id: 'valid-session-id',
         session_token: 'valid-token'
       })
@@ -70,7 +70,7 @@ describe('#uploadDocumentController', () => {
 
     test('Should redirect to root route when user is not authenticated', async () => {
       // Mock that getSession returns null (no valid session)
-      vi.mocked(getSessionFromId).mockResolvedValueOnce(null)
+      getSessionFromId.mockResolvedValueOnce(null)
 
       // Mock request with session state (HAPI handles cookie parsing)
       const mockRequest = createMockRequest({
@@ -100,7 +100,7 @@ describe('#uploadDocumentController', () => {
 
     test('Should redirect to root route when session validation fails', async () => {
       // Mock that getSession throws an error (Redis connection issue)
-      vi.mocked(getSessionFromId).mockRejectedValueOnce(
+      getSessionFromId.mockRejectedValueOnce(
         new Error('Redis connection failed')
       )
 
@@ -120,7 +120,7 @@ describe('#uploadDocumentController', () => {
 
     test('Should validate session on every request', async () => {
       // Mock that getSession returns a valid session
-      vi.mocked(getSessionFromId).mockResolvedValueOnce({
+      getSessionFromId.mockResolvedValueOnce({
         session_id: 'valid-session-id',
         session_token: 'valid-token'
       })

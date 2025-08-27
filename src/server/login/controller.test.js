@@ -74,7 +74,7 @@ describe('#loginController', () => {
       // We don't need to test HAPI cookie parsing - just that the controller logic works
 
       // Mock that getSession returns a valid session
-      vi.mocked(getSessionFromId).mockResolvedValueOnce({
+      getSessionFromId.mockResolvedValueOnce({
         session_id: 'existing-session',
         session_token: 'valid-token'
       })
@@ -93,7 +93,7 @@ describe('#loginController', () => {
     })
 
     test('Should show error page when OAuth flow initialization fails', async () => {
-      vi.mocked(initiateOauthFlow).mockRejectedValueOnce(
+      initiateOauthFlow.mockRejectedValueOnce(
         new Error('OAuth initialization failed')
       )
 
@@ -121,7 +121,7 @@ describe('#loginController', () => {
         created_at: new Date().toISOString(),
         expires_at: new Date(Date.now() + 3600000).toISOString()
       }
-      vi.mocked(authenticateWithCallback).mockResolvedValueOnce(sessionData)
+      authenticateWithCallback.mockResolvedValueOnce(sessionData)
 
       // When: OAuth callback is received with valid parameters
       const { statusCode, headers } = await server.inject({
@@ -189,7 +189,7 @@ describe('#loginController', () => {
       // Given: Service throws invalid state error
       const error = new Error('State validation failed')
       error.code = 'INVALID_STATE'
-      vi.mocked(authenticateWithCallback).mockRejectedValueOnce(error)
+      authenticateWithCallback.mockRejectedValueOnce(error)
 
       // When: OAuth callback is processed
       const { statusCode, result } = await server.inject({
@@ -209,7 +209,7 @@ describe('#loginController', () => {
       // Given: Service throws missing PKCE error
       const error = new Error('PKCE verifier not found')
       error.code = 'MISSING_PKCE'
-      vi.mocked(authenticateWithCallback).mockRejectedValueOnce(error)
+      authenticateWithCallback.mockRejectedValueOnce(error)
 
       // When: OAuth callback is processed
       const { statusCode, result } = await server.inject({
@@ -227,7 +227,7 @@ describe('#loginController', () => {
 
     test('Should show authentication failed error when service throws exception', async () => {
       // Given: Service throws an exception
-      vi.mocked(authenticateWithCallback).mockRejectedValueOnce(
+      authenticateWithCallback.mockRejectedValueOnce(
         new Error('Token exchange failed')
       )
 
@@ -252,7 +252,7 @@ describe('#loginController', () => {
         created_at: new Date().toISOString(),
         expires_at: new Date(Date.now() + 3600000).toISOString()
       }
-      vi.mocked(authenticateWithCallback).mockResolvedValueOnce(sessionData)
+      authenticateWithCallback.mockResolvedValueOnce(sessionData)
 
       // When: OAuth callback is processed
       const response = await server.inject({

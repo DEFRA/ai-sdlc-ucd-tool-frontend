@@ -34,12 +34,12 @@ describe('rootController', () => {
       expect(mockH.redirect).toHaveBeenCalledWith(
         AUTHENTICATION_ROUTES.LOGIN_PATH
       )
-      expect(vi.mocked(getSessionFromId)).not.toHaveBeenCalled()
+      expect(getSessionFromId).not.toHaveBeenCalled()
     })
 
     it('should redirect to login when session is not found in Redis', async () => {
       mockRequest.state.session = 'test-session-id'
-      vi.mocked(getSessionFromId).mockResolvedValue(null)
+      getSessionFromId.mockResolvedValue(null)
 
       await rootController.handler(mockRequest, mockH)
 
@@ -55,7 +55,7 @@ describe('rootController', () => {
         session_id: 'test-session-id',
         expires_at: new Date(Date.now() + 3600000).toISOString()
       }
-      vi.mocked(getSessionFromId).mockResolvedValue(validSession)
+      getSessionFromId.mockResolvedValue(validSession)
 
       await rootController.handler(mockRequest, mockH)
 
@@ -65,9 +65,7 @@ describe('rootController', () => {
 
     it('should handle session validation errors gracefully', async () => {
       mockRequest.state.session = 'test-session-id'
-      vi.mocked(getSessionFromId).mockRejectedValue(
-        new Error('Redis connection failed')
-      )
+      getSessionFromId.mockRejectedValue(new Error('Redis connection failed'))
 
       await rootController.handler(mockRequest, mockH)
 

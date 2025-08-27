@@ -23,7 +23,7 @@ describe('#azure-ad-url-builder', () => {
       const codeChallenge = 'test-code-challenge-abc'
 
       // Mock the config validation and URL building
-      vi.mocked(validateAndGetAzureAdConfig).mockReturnValue({
+      validateAndGetAzureAdConfig.mockReturnValue({
         baseUrl: 'https://login.microsoftonline.com',
         clientId: 'test-client-id-456',
         redirectUri: 'https://example.com/auth/callback',
@@ -31,7 +31,7 @@ describe('#azure-ad-url-builder', () => {
         authorizeEndpoint: 'oauth2/v2.0/authorize'
       })
 
-      vi.mocked(buildAzureAdEndpointUrl).mockReturnValue(
+      buildAzureAdEndpointUrl.mockReturnValue(
         'https://login.microsoftonline.com/test-tenant-789/oauth2/v2.0/authorize'
       )
 
@@ -67,7 +67,7 @@ describe('#azure-ad-url-builder', () => {
       const state = 'state+with/special=chars'
       const codeChallenge = 'challenge&with#special'
 
-      vi.mocked(validateAndGetAzureAdConfig).mockReturnValue({
+      validateAndGetAzureAdConfig.mockReturnValue({
         baseUrl: 'https://auth.example.com',
         clientId: 'client&id',
         redirectUri: 'https://example.com/auth?callback=true',
@@ -75,7 +75,7 @@ describe('#azure-ad-url-builder', () => {
         authorizeEndpoint: 'auth'
       })
 
-      vi.mocked(buildAzureAdEndpointUrl).mockReturnValue(
+      buildAzureAdEndpointUrl.mockReturnValue(
         'https://auth.example.com/tenant/id/auth'
       )
 
@@ -91,7 +91,7 @@ describe('#azure-ad-url-builder', () => {
     })
 
     test('Should throw error when configuration validation fails', () => {
-      vi.mocked(validateAndGetAzureAdConfig).mockImplementation(() => {
+      validateAndGetAzureAdConfig.mockImplementation(() => {
         throw new Error(
           'Azure AD configuration is incomplete. Missing: clientId'
         )
@@ -103,7 +103,7 @@ describe('#azure-ad-url-builder', () => {
     })
 
     test('Should use correct OAuth constants', () => {
-      vi.mocked(validateAndGetAzureAdConfig).mockReturnValue({
+      validateAndGetAzureAdConfig.mockReturnValue({
         baseUrl: 'https://auth.com',
         clientId: 'client',
         redirectUri: 'https://example.com/callback',
@@ -111,9 +111,7 @@ describe('#azure-ad-url-builder', () => {
         authorizeEndpoint: 'auth'
       })
 
-      vi.mocked(buildAzureAdEndpointUrl).mockReturnValue(
-        'https://auth.com/tenant/auth'
-      )
+      buildAzureAdEndpointUrl.mockReturnValue('https://auth.com/tenant/auth')
 
       const url = buildAuthorizationUrl('state', 'challenge')
 
