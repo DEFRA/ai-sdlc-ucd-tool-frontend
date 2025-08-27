@@ -113,6 +113,7 @@ describe('authenticationService', () => {
 
       // When/Then: Initiating OAuth flow throws error
       await expect(initiateOauthFlow()).rejects.toThrow('Storage failed')
+      expect(storeStateParameter).toHaveBeenCalledWith(MOCK_STATE)
 
       // And: Does not proceed with PKCE storage
       expect(storePkceVerifier).not.toHaveBeenCalled()
