@@ -52,11 +52,7 @@ export async function createSession() {
 
     return sessionData
   } catch (error) {
-    // Clean up session if Redis storage fails
-    const client = getRedisClient()
-    await client.del(sessionKey).catch(() => {
-      // Ignore cleanup errors
-    })
+    console.error('Error creating session:', error)
     throw new Error('Session creation failed')
   }
 }

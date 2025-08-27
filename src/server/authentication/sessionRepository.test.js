@@ -1,8 +1,8 @@
 import { vi } from 'vitest'
 import {
   createSession,
-  getSession,
-  deleteSession
+  deleteSession,
+  getSession
 } from './sessionRepository.js'
 
 // Create a mock redis client that we can control
@@ -69,9 +69,6 @@ describe('sessionRepository', () => {
 
       // When/Then: Creating session throws error
       await expect(createSession()).rejects.toThrow('Session creation failed')
-
-      // And: Cleanup is attempted
-      expect(mockRedisClient.del).toHaveBeenCalled()
     })
   })
 
