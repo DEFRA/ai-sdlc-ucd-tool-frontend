@@ -196,13 +196,12 @@ describe('authenticationService', () => {
       vi.mocked(validateStateParameter).mockResolvedValueOnce(false)
 
       // When/Then: Authentication throws error
-      try {
-        await authenticateWithCallback(code, state)
-        throw new Error('Expected function to throw')
-      } catch (error) {
-        expect(error.message).toBe('State validation failed')
-        expect(error.code).toBe('INVALID_STATE')
-      }
+      await expect(authenticateWithCallback(code, state)).rejects.toMatchObject(
+        {
+          message: 'State validation failed',
+          code: 'INVALID_STATE'
+        }
+      )
 
       // And: Does not proceed with token exchange
       expect(exchangeCodeForTokens).not.toHaveBeenCalled()
@@ -221,13 +220,12 @@ describe('authenticationService', () => {
       vi.mocked(retrievePkceVerifier).mockResolvedValueOnce(null)
 
       // When/Then: Authentication throws error
-      try {
-        await authenticateWithCallback(code, state)
-        throw new Error('Expected function to throw')
-      } catch (error) {
-        expect(error.message).toBe('PKCE verifier not found')
-        expect(error.code).toBe('MISSING_PKCE')
-      }
+      await expect(authenticateWithCallback(code, state)).rejects.toMatchObject(
+        {
+          message: 'PKCE verifier not found',
+          code: 'MISSING_PKCE'
+        }
+      )
 
       // And: Does not proceed with token exchange
       expect(exchangeCodeForTokens).not.toHaveBeenCalled()

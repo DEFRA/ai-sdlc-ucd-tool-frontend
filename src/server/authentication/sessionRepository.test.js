@@ -1,4 +1,4 @@
-import { vi } from 'vitest'
+import { vi, describe, test } from 'vitest'
 import {
   createSession,
   deleteSession,
@@ -40,7 +40,7 @@ describe('sessionRepository', () => {
   })
 
   describe('when creating a session', () => {
-    it('creates session with valid structure and stores in Redis', async () => {
+    test('creates session with valid structure and stores in Redis', async () => {
       // When: Creating a new session
       const result = await createSession()
 
@@ -61,7 +61,7 @@ describe('sessionRepository', () => {
       )
     })
 
-    it('throws error when Redis storage fails', async () => {
+    test('throws error when Redis storage fails', async () => {
       // Given: Redis set operation will fail
       mockRedisClient.set.mockRejectedValueOnce(
         new Error('Redis connection failed')
@@ -73,7 +73,7 @@ describe('sessionRepository', () => {
   })
 
   describe('when retrieving a session', () => {
-    it('retrieves valid session from Redis', async () => {
+    test('retrieves valid session from Redis', async () => {
       // Given: A valid session exists in Redis
       const sessionId = 'valid-session-id'
       const sessionData = {
@@ -92,7 +92,7 @@ describe('sessionRepository', () => {
       expect(mockRedisClient.get).toHaveBeenCalledWith(`session:${sessionId}`)
     })
 
-    it('returns null when session does not exist', async () => {
+    test('returns null when session does not exist', async () => {
       // Given: Session does not exist in Redis
       mockRedisClient.get.mockResolvedValueOnce(null)
 
@@ -103,7 +103,7 @@ describe('sessionRepository', () => {
       expect(result).toBeNull()
     })
 
-    it('returns null when sessionId is not provided', async () => {
+    test('returns null when sessionId is not provided', async () => {
       // When: Getting session without ID
       const result = await getSession(null)
 
@@ -112,7 +112,7 @@ describe('sessionRepository', () => {
       expect(mockRedisClient.get).not.toHaveBeenCalled()
     })
 
-    it('returns null and cleans up expired session', async () => {
+    test('returns null and cleans up expired session', async () => {
       // Given: An expired session exists in Redis
       const sessionId = 'expired-session-id'
       const expiredSessionData = {
@@ -133,7 +133,7 @@ describe('sessionRepository', () => {
       expect(mockRedisClient.del).toHaveBeenCalledWith(`session:${sessionId}`)
     })
 
-    it('returns null when Redis throws error', async () => {
+    test('returns null when Redis throws error', async () => {
       // Given: Redis throws an error
       const sessionId = 'error-session-id'
       mockRedisClient.get.mockRejectedValueOnce(
@@ -159,7 +159,7 @@ describe('sessionRepository', () => {
       consoleErrorSpy.mockRestore()
     })
 
-    it('handles malformed JSON in session data', async () => {
+    test('handles malformed JSON in session data', async () => {
       // Given: Malformed JSON in Redis
       const sessionId = 'malformed-session-id'
       mockRedisClient.get.mockResolvedValueOnce('invalid-json{')
@@ -185,7 +185,7 @@ describe('sessionRepository', () => {
   })
 
   describe('when deleting a session', () => {
-    it('deletes session from Redis', async () => {
+    test('deletes session from Redis', async () => {
       // Given: A session ID to delete
       const sessionId = 'session-to-delete'
 
@@ -196,7 +196,7 @@ describe('sessionRepository', () => {
       expect(mockRedisClient.del).toHaveBeenCalledWith(`session:${sessionId}`)
     })
 
-    it('handles null session ID gracefully', async () => {
+    test('handles null session ID gracefully', async () => {
       // When: Deleting with null ID
       await deleteSession(null)
 
@@ -204,7 +204,7 @@ describe('sessionRepository', () => {
       expect(mockRedisClient.del).not.toHaveBeenCalled()
     })
 
-    it('logs error when Redis deletion fails', async () => {
+    test('logs error when Redis deletion fails', async () => {
       // Given: Redis deletion will fail
       const sessionId = 'error-session-id'
       mockRedisClient.del.mockRejectedValueOnce(
