@@ -3,15 +3,10 @@ import {
   AUTHENTICATION_ROUTES
 } from '../common/constants/authentication-constants.js'
 import {
-  generatePkceChallenge,
-  generateStateParameter
-} from '../authentication/oauth-crypto-service.js'
-import {
-  storePkceVerifier,
-  storeStateParameter
-} from '../authentication/oauth-state-storage.js'
-import { buildAuthorizationUrl } from '../authentication/azure-ad-url-builder.js'
-import { processAuthCallback, getSession } from './authCallbackService.js'
+  initiateOauthFlow,
+  authenticateWithCallback,
+  getSessionFromId
+} from '../authentication/authenticationService.js'
 import { setSessionCookie } from '../authentication/cookie-manager.js'
 
 /**
@@ -32,8 +27,9 @@ export const showLoginFormController = {
     })
 
     const sessionId = request.state.session
+
     if (sessionId) {
-      const session = await getSession(sessionId)
+      const session = await getSessionFromId(sessionId)
       if (session) {
         request.log(['info'], {
           level: 'INFO',
@@ -48,23 +44,7 @@ export const showLoginFormController = {
     }
 
     try {
-      const state = generateStateParameter()
-      const { codeVerifier, codeChallenge } = generatePkceChallenge()
-
-      request.log(['debug'], {
-        level: 'DEBUG',
-        message: 'OAuth security parameters generated',
-        requestId,
-        traceId,
-        hasState: true,
-        hasPkce: true
-      })
-
-      await storeStateParameter(state)
-
-      await storePkceVerifier(state, codeVerifier)
-
-      const authorizationUrl = buildAuthorizationUrl(state, codeChallenge)
+      const authorizationUrl = await initiateOauthFlow()
 
       request.log(['info'], {
         level: 'INFO',
@@ -155,35 +135,11 @@ export const authCallbackController = {
     }
 
     try {
-      // Process authentication callback through service
-      const result = await processAuthCallback(code, state)
-
-      if (!result.success) {
-        // Handle validation failures
-        const errorMessage =
-          result.error === 'INVALID_STATE' || result.error === 'MISSING_PKCE'
-            ? AUTHENTICATION_MESSAGES.AUTHENTICATION_REQUEST_EXPIRED
-            : AUTHENTICATION_MESSAGES.AUTHENTICATION_FAILED
-
-        request.log(['warn'], {
-          level: 'WARN',
-          message: result.message,
-          requestId,
-          traceId,
-          errorCode: result.error,
-          decision: 'SHOW_ERROR_PAGE',
-          reason: result.message
-        })
-
-        return h.view(AUTHENTICATION_ROUTES.LOGIN_VIEW_PATH, {
-          pageTitle: 'Sign in',
-          errorMessage,
-          hasError: true
-        })
-      }
+      // Authenticate with callback parameters
+      const sessionData = await authenticateWithCallback(code, state)
 
       // Set session cookie with the session ID from the service
-      setSessionCookie(h, result.sessionData.session_id)
+      setSessionCookie(h, sessionData.session_id)
 
       request.log(['info'], {
         level: 'INFO',
@@ -198,20 +154,26 @@ export const authCallbackController = {
 
       return h.redirect(AUTHENTICATION_ROUTES.HOME_REDIRECT_PATH)
     } catch (caughtError) {
+      // Determine appropriate error message based on error code
+      const errorMessage =
+        caughtError.code === 'INVALID_STATE' ||
+        caughtError.code === 'MISSING_PKCE'
+          ? AUTHENTICATION_MESSAGES.AUTHENTICATION_REQUEST_EXPIRED
+          : AUTHENTICATION_MESSAGES.AUTHENTICATION_FAILED
+
       request.log(['error'], {
         level: 'ERROR',
         message: 'OAuth callback processing failed',
         requestId,
         traceId,
-        errorCode: 'OAUTH_CALLBACK_ERROR',
-        errorMessage: caughtError.message,
+        errorCode: caughtError.code || 'OAUTH_CALLBACK_ERROR',
         decision: 'SHOW_ERROR_PAGE',
-        reason: 'Exception during OAuth callback processing'
+        reason: 'Authentication failed'
       })
 
       return h.view(AUTHENTICATION_ROUTES.LOGIN_VIEW_PATH, {
         pageTitle: 'Sign in',
-        errorMessage: AUTHENTICATION_MESSAGES.AUTHENTICATION_FAILED,
+        errorMessage,
         hasError: true
       })
     }

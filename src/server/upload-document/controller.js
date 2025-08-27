@@ -1,4 +1,4 @@
-import { getSession } from '../login/authCallbackService.js'
+import { getSessionFromId } from '../authentication/authenticationService.js'
 
 /**
  * Controller for handling upload document requests
@@ -42,7 +42,7 @@ export const uploadDocumentController = {
         hasSessionCookie: true
       })
 
-      const session = await getSession(sessionId)
+      const session = await getSessionFromId(sessionId)
 
       // If session is invalid or expired, redirect to root
       if (!session) {

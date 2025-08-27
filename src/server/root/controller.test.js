@@ -1,10 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { rootController } from './controller.js'
 import { AUTHENTICATION_ROUTES } from '../common/constants/authentication-constants.js'
-import { getSession } from '../login/authCallbackService.js'
+import { getSessionFromId } from '../authentication/authenticationService.js'
 
 vi.mock('../common/helpers/session-manager.js')
-vi.mock('../login/authCallbackService.js')
+vi.mock('../authentication/authenticationService.js', () => ({
+  getSessionFromId: vi.fn()
+}))
 
 describe('rootController', () => {
   let mockRequest
@@ -32,16 +34,16 @@ describe('rootController', () => {
       expect(mockH.redirect).toHaveBeenCalledWith(
         AUTHENTICATION_ROUTES.LOGIN_PATH
       )
-      expect(getSession).not.toHaveBeenCalled()
+      expect(vi.mocked(getSessionFromId)).not.toHaveBeenCalled()
     })
 
     it('should redirect to login when session is not found in Redis', async () => {
       mockRequest.state.session = 'test-session-id'
-      getSession.mockResolvedValue(null)
+      vi.mocked(getSessionFromId).mockResolvedValue(null)
 
       await rootController.handler(mockRequest, mockH)
 
-      expect(getSession).toHaveBeenCalledWith('test-session-id')
+      expect(getSessionFromId).toHaveBeenCalledWith('test-session-id')
       expect(mockH.redirect).toHaveBeenCalledWith(
         AUTHENTICATION_ROUTES.LOGIN_PATH
       )
@@ -53,21 +55,23 @@ describe('rootController', () => {
         session_id: 'test-session-id',
         expires_at: new Date(Date.now() + 3600000).toISOString()
       }
-      getSession.mockResolvedValue(validSession)
+      vi.mocked(getSessionFromId).mockResolvedValue(validSession)
 
       await rootController.handler(mockRequest, mockH)
 
-      expect(getSession).toHaveBeenCalledWith('test-session-id')
+      expect(getSessionFromId).toHaveBeenCalledWith('test-session-id')
       expect(mockH.redirect).toHaveBeenCalledWith('/upload-document')
     })
 
     it('should handle session validation errors gracefully', async () => {
       mockRequest.state.session = 'test-session-id'
-      getSession.mockRejectedValue(new Error('Redis connection failed'))
+      vi.mocked(getSessionFromId).mockRejectedValue(
+        new Error('Redis connection failed')
+      )
 
       await rootController.handler(mockRequest, mockH)
 
-      expect(getSession).toHaveBeenCalledWith('test-session-id')
+      expect(getSessionFromId).toHaveBeenCalledWith('test-session-id')
       expect(mockRequest.log).toHaveBeenCalledWith(['error'], {
         level: 'ERROR',
         message: 'Session validation error occurred',
