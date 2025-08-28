@@ -5,7 +5,7 @@ import {
   validateStateParameter
 } from './oauth-state-storage.js'
 import { exchangeCodeForTokens } from './azure-ad-token-client.js'
-import { createSession, getSession } from './sessionRepository.js'
+import { createSession, getSession } from './session-repository.js'
 import {
   generatePkceChallenge,
   generateStateParameter

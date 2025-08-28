@@ -3,7 +3,7 @@ import {
   createSession,
   deleteSession,
   getSession
-} from './sessionRepository.js'
+} from './session-repository.js'
 
 // Create a mock redis client that we can control
 const mockRedisClient = {

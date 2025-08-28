@@ -3,7 +3,7 @@ import {
   authenticateWithCallback,
   getSessionFromId,
   initiateOauthFlow
-} from './authenticationService.js'
+} from './authentication-service.js'
 import {
   retrievePkceVerifier,
   storePkceVerifier,
@@ -14,7 +14,7 @@ import { exchangeCodeForTokens } from './azure-ad-token-client.js'
 import {
   createSession,
   getSession as getSessionFromRepository
-} from './sessionRepository.js'
+} from './session-repository.js'
 import {
   generatePkceChallenge,
   generateStateParameter
@@ -33,7 +33,7 @@ vi.mock('../authentication/azure-ad-token-client.js', () => ({
   exchangeCodeForTokens: vi.fn()
 }))
 
-vi.mock('../authentication/sessionRepository.js', () => ({
+vi.mock('../authentication/session-repository.js', () => ({
   createSession: vi.fn(),
   getSession: vi.fn()
 }))

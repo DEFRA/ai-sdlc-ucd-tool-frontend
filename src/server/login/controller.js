@@ -6,7 +6,7 @@ import {
   initiateOauthFlow,
   authenticateWithCallback,
   getSessionFromId
-} from '../authentication/authenticationService.js'
+} from '../authentication/authentication-service.js'
 import { setSessionCookie } from '../authentication/cookie-manager.js'
 
 /**

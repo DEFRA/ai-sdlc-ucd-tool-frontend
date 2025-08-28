@@ -4,7 +4,7 @@ import {
   createMockRequest,
   createMockH
 } from '../common/test-helpers/mock-request.js'
-import { getSessionFromId } from '../authentication/authenticationService.js'
+import { getSessionFromId } from '../authentication/authentication-service.js'
 import { uploadDocumentController } from './controller.js'
 
 // Mock the buildRedisClient function to return our mock
@@ -24,7 +24,7 @@ vi.mock('../common/helpers/redis-client.js', () => {
 })
 
 // Mock authentication service
-vi.mock('../authentication/authenticationService.js', () => ({
+vi.mock('../authentication/authentication-service.js', () => ({
   getSessionFromId: vi.fn()
 }))
 

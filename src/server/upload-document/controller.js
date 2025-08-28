@@ -1,4 +1,4 @@
-import { getSessionFromId } from '../authentication/authenticationService.js'
+import { getSessionFromId } from '../authentication/authentication-service.js'
 
 /**
  * Controller for handling upload document requests

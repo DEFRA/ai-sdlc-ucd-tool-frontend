@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { rootController } from './controller.js'
 import { AUTHENTICATION_ROUTES } from '../common/constants/authentication-constants.js'
-import { getSessionFromId } from '../authentication/authenticationService.js'
+import { getSessionFromId } from '../authentication/authentication-service.js'
 
 vi.mock('../common/helpers/session-manager.js')
-vi.mock('../authentication/authenticationService.js', () => ({
+vi.mock('../authentication/authentication-service.js', () => ({
   getSessionFromId: vi.fn()
 }))
 

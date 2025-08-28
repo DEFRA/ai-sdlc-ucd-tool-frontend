@@ -1,5 +1,5 @@
 import { AUTHENTICATION_ROUTES } from '../common/constants/authentication-constants.js'
-import { getSessionFromId } from '../authentication/authenticationService.js'
+import { getSessionFromId } from '../authentication/authentication-service.js'
 
 /**
  * Root route controller with session validation

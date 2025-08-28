@@ -11,7 +11,7 @@ import {
   initiateOauthFlow,
   getSessionFromId,
   authenticateWithCallback
-} from '../authentication/authenticationService.js'
+} from '../authentication/authentication-service.js'
 
 // Mock the buildRedisClient function to return our mock
 vi.mock('../common/helpers/redis-client.js', () => {
@@ -30,7 +30,7 @@ vi.mock('../common/helpers/redis-client.js', () => {
 })
 
 // Mock authentication service
-vi.mock('../authentication/authenticationService.js', () => ({
+vi.mock('../authentication/authentication-service.js', () => ({
   initiateOauthFlow: vi.fn(() =>
     Promise.resolve(
       'https://test-auth-server.com/dev-tenant-id/oauth2/v2.0/authorize?state=mock-state&code_challenge=mock-challenge'
