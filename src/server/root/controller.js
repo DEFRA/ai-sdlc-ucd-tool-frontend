@@ -1,5 +1,5 @@
-import { getSession } from '../common/helpers/session-manager.js'
 import { AUTHENTICATION_ROUTES } from '../common/constants/authentication-constants.js'
+import { getSessionFromId } from '../authentication/authentication-service.js'
 
 /**
  * Root route controller with session validation
@@ -42,7 +42,7 @@ export const rootController = {
         hasSessionCookie: true
       })
 
-      const session = await getSession(sessionId)
+      const session = await getSessionFromId(sessionId)
 
       if (!session) {
         request.log(['info'], {

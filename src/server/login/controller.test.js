@@ -3,9 +3,15 @@ import { statusCodes } from '../common/constants/status-codes.js'
 import { AUTHENTICATION_MESSAGES } from '../common/constants/authentication-constants.js'
 import { createServer } from '../server.js'
 import {
-  createMockRequest,
-  createMockH
+  createMockH,
+  createMockRequest
 } from '../common/test-helpers/mock-request.js'
+import { showLoginFormController } from './controller.js'
+import {
+  initiateOauthFlow,
+  getSessionFromId,
+  authenticateWithCallback
+} from '../authentication/authentication-service.js'
 
 // Mock the buildRedisClient function to return our mock
 vi.mock('../common/helpers/redis-client.js', () => {
@@ -23,46 +29,15 @@ vi.mock('../common/helpers/redis-client.js', () => {
   }
 })
 
-// Mock OAuth crypto service
-vi.mock('../authentication/oauth-crypto-service.js', () => ({
-  generateStateParameter: vi.fn(() => 'mock-state-parameter'),
-  generatePkceChallenge: vi.fn(() => ({
-    codeVerifier: 'mock-code-verifier',
-    codeChallenge: 'mock-code-challenge'
-  }))
-}))
-
-// Mock OAuth state storage
-vi.mock('../authentication/oauth-state-storage.js', () => ({
-  storeStateParameter: vi.fn().mockResolvedValue(undefined),
-  storePkceVerifier: vi.fn().mockResolvedValue(undefined),
-  validateStateParameter: vi.fn().mockResolvedValue(true),
-  retrievePkceVerifier: vi.fn().mockResolvedValue('mock-code-verifier')
-}))
-
-// Mock Azure AD URL builder
-vi.mock('../authentication/azure-ad-url-builder.js', () => ({
-  buildAuthorizationUrl: vi.fn(
-    (state, challenge) =>
-      `https://test-auth-server.com/dev-tenant-id/oauth2/v2.0/authorize?state=${state}&code_challenge=${challenge}`
-  )
-}))
-
-// Mock Azure AD token client
-vi.mock('../authentication/azure-ad-token-client.js', () => ({
-  exchangeCodeForTokens: vi.fn().mockResolvedValue({
-    access_token: 'mock-access-token',
-    refresh_token: 'mock-refresh-token',
-    id_token: 'mock-id-token',
-    expires_in: 3600
-  })
-}))
-
-// Mock session manager
-vi.mock('../common/helpers/session-manager.js', () => ({
-  createSession: vi.fn(),
-  getSession: vi.fn(),
-  deleteSession: vi.fn()
+// Mock authentication service
+vi.mock('../authentication/authentication-service.js', () => ({
+  initiateOauthFlow: vi.fn(() =>
+    Promise.resolve(
+      'https://test-auth-server.com/dev-tenant-id/oauth2/v2.0/authorize?state=mock-state&code_challenge=mock-challenge'
+    )
+  ),
+  authenticateWithCallback: vi.fn(),
+  getSessionFromId: vi.fn()
 }))
 
 describe('#loginController', () => {
@@ -90,7 +65,7 @@ describe('#loginController', () => {
 
       expect(statusCode).toBe(statusCodes.redirect)
       expect(headers.location).toBe(
-        'https://test-auth-server.com/dev-tenant-id/oauth2/v2.0/authorize?state=mock-state-parameter&code_challenge=mock-code-challenge'
+        'https://test-auth-server.com/dev-tenant-id/oauth2/v2.0/authorize?state=mock-state&code_challenge=mock-challenge'
       )
     })
 
@@ -99,10 +74,7 @@ describe('#loginController', () => {
       // We don't need to test HAPI cookie parsing - just that the controller logic works
 
       // Mock that getSession returns a valid session
-      const { getSession } = await import(
-        '../common/helpers/session-manager.js'
-      )
-      vi.mocked(getSession).mockResolvedValueOnce({
+      getSessionFromId.mockResolvedValueOnce({
         session_id: 'existing-session',
         session_token: 'valid-token'
       })
@@ -114,37 +86,15 @@ describe('#loginController', () => {
       const mockH = createMockH()
 
       // Call controller directly to test logic
-      const { showLoginFormController } = await import('./controller.js')
       const result = await showLoginFormController.handler(mockRequest, mockH)
 
       expect(mockH.redirect).toHaveBeenCalledWith('/upload-document')
       expect(result).toBe('redirect-response')
     })
 
-    test('Should show error page when Azure AD configuration is missing', async () => {
-      const { buildAuthorizationUrl } = await import(
-        '../authentication/azure-ad-url-builder.js'
-      )
-      buildAuthorizationUrl.mockImplementationOnce(() => {
-        throw new Error('Azure AD configuration is incomplete')
-      })
-
-      const { statusCode, result } = await server.inject({
-        method: 'GET',
-        url: '/login'
-      })
-
-      expect(statusCode).toBe(statusCodes.ok)
-      expect(result).toContain(AUTHENTICATION_MESSAGES.AZURE_AD_UNAVAILABLE)
-      expect(result).toContain('govuk-error-message')
-    })
-
-    test('Should show error page when Redis is unavailable', async () => {
-      const { storeStateParameter } = await import(
-        '../authentication/oauth-state-storage.js'
-      )
-      storeStateParameter.mockRejectedValueOnce(
-        new Error('Redis connection failed')
+    test('Should show error page when OAuth flow initialization fails', async () => {
+      initiateOauthFlow.mockRejectedValueOnce(
+        new Error('OAuth initialization failed')
       )
 
       const { statusCode, result } = await server.inject({
@@ -164,102 +114,155 @@ describe('#loginController', () => {
     })
 
     test('Should handle successful OAuth callback and redirect to home', async () => {
+      // Given: Service authenticates successfully
+      const sessionData = {
+        session_id: 'test-session-id',
+        session_token: 'test-token',
+        created_at: new Date().toISOString(),
+        expires_at: new Date(Date.now() + 3600000).toISOString()
+      }
+      authenticateWithCallback.mockResolvedValueOnce(sessionData)
+
+      // When: OAuth callback is received with valid parameters
       const { statusCode, headers } = await server.inject({
         method: 'GET',
         url: '/auth/callback?code=mock-auth-code&state=mock-state'
       })
 
+      // Then: User is redirected to home
       expect(statusCode).toBe(statusCodes.redirect)
       expect(headers.location).toBe('/upload-document')
+
+      // And: Service was called with correct parameters
+      expect(authenticateWithCallback).toHaveBeenCalledWith(
+        'mock-auth-code',
+        'mock-state'
+      )
     })
 
-    test('Should handle OAuth error response from Azure AD', async () => {
+    test('Should show error page when OAuth provider returns error', async () => {
+      // When: OAuth callback contains an error parameter
       const { statusCode, result } = await server.inject({
         method: 'GET',
         url: '/auth/callback?error=access_denied&error_description=User+cancelled'
       })
 
+      // Then: Error page is shown
       expect(statusCode).toBe(statusCodes.ok)
       expect(result).toContain(AUTHENTICATION_MESSAGES.AZURE_AD_UNAVAILABLE)
       expect(result).toContain('govuk-error-message')
+
+      // And: Service is not called
+      expect(authenticateWithCallback).not.toHaveBeenCalled()
     })
 
-    test('Should handle missing authorization code parameter', async () => {
-      const { statusCode, result } = await server.inject({
-        method: 'GET',
-        url: '/auth/callback?state=mock-state'
-      })
+    test('Should show error page when required parameters are missing', async () => {
+      // When: OAuth callback is missing required parameters
+      const testCases = [
+        { url: '/auth/callback?state=mock-state', description: 'missing code' },
+        {
+          url: '/auth/callback?code=mock-auth-code',
+          description: 'missing state'
+        },
+        { url: '/auth/callback', description: 'missing both parameters' }
+      ]
 
-      expect(statusCode).toBe(statusCodes.ok)
-      expect(result).toContain(
-        'Invalid authentication response. Please try again.'
-      )
-      expect(result).toContain('govuk-error-message')
+      for (const testCase of testCases) {
+        const { statusCode, result } = await server.inject({
+          method: 'GET',
+          url: testCase.url
+        })
+
+        // Then: Error page is shown for each case
+        expect(statusCode).toBe(statusCodes.ok)
+        expect(result).toContain(
+          AUTHENTICATION_MESSAGES.INVALID_AUTHENTICATION_RESPONSE
+        )
+        expect(result).toContain('govuk-error-message')
+      }
+
+      // And: Service is never called
+      expect(authenticateWithCallback).not.toHaveBeenCalled()
     })
 
-    test('Should handle missing state parameter', async () => {
-      const { statusCode, result } = await server.inject({
-        method: 'GET',
-        url: '/auth/callback?code=mock-auth-code'
-      })
+    test('Should show expired error when service throws invalid state error', async () => {
+      // Given: Service throws invalid state error
+      const error = new Error('State validation failed')
+      error.code = 'INVALID_STATE'
+      authenticateWithCallback.mockRejectedValueOnce(error)
 
-      expect(statusCode).toBe(statusCodes.ok)
-      expect(result).toContain(
-        'Invalid authentication response. Please try again.'
-      )
-      expect(result).toContain('govuk-error-message')
-    })
-
-    test('Should handle invalid state parameter', async () => {
-      const { validateStateParameter } = await import(
-        '../authentication/oauth-state-storage.js'
-      )
-      validateStateParameter.mockResolvedValueOnce(false)
-
+      // When: OAuth callback is processed
       const { statusCode, result } = await server.inject({
         method: 'GET',
         url: '/auth/callback?code=mock-auth-code&state=invalid-state'
       })
 
+      // Then: Expired authentication error is shown
       expect(statusCode).toBe(statusCodes.ok)
       expect(result).toContain(
-        'Authentication request expired. Please try again.'
+        AUTHENTICATION_MESSAGES.AUTHENTICATION_REQUEST_EXPIRED
       )
       expect(result).toContain('govuk-error-message')
     })
 
-    test('Should handle token exchange failure', async () => {
-      const { exchangeCodeForTokens } = await import(
-        '../authentication/azure-ad-token-client.js'
-      )
-      exchangeCodeForTokens.mockRejectedValueOnce(
-        new Error('Token exchange failed')
-      )
+    test('Should show expired error when service throws missing PKCE error', async () => {
+      // Given: Service throws missing PKCE error
+      const error = new Error('PKCE verifier not found')
+      error.code = 'MISSING_PKCE'
+      authenticateWithCallback.mockRejectedValueOnce(error)
 
+      // When: OAuth callback is processed
       const { statusCode, result } = await server.inject({
         method: 'GET',
         url: '/auth/callback?code=mock-auth-code&state=mock-state'
       })
 
+      // Then: Expired authentication error is shown
       expect(statusCode).toBe(statusCodes.ok)
-      expect(result).toContain('Authentication failed. Please try again.')
+      expect(result).toContain(
+        AUTHENTICATION_MESSAGES.AUTHENTICATION_REQUEST_EXPIRED
+      )
       expect(result).toContain('govuk-error-message')
     })
 
-    test('Should create session on successful authentication', async () => {
-      const { createSession } = await import(
-        '../common/helpers/session-manager.js'
+    test('Should show authentication failed error when service throws exception', async () => {
+      // Given: Service throws an exception
+      authenticateWithCallback.mockRejectedValueOnce(
+        new Error('Token exchange failed')
       )
 
-      await server.inject({
+      // When: OAuth callback is processed
+      const { statusCode, result } = await server.inject({
         method: 'GET',
         url: '/auth/callback?code=mock-auth-code&state=mock-state'
       })
 
-      expect(createSession).toHaveBeenCalledWith(
-        expect.any(Object),
-        expect.any(Object)
-      )
+      // Then: Authentication failed error is shown
+      expect(statusCode).toBe(statusCodes.ok)
+      expect(result).toContain(AUTHENTICATION_MESSAGES.AUTHENTICATION_FAILED)
+      expect(result).toContain('govuk-error-message')
+    })
+
+    test('Should set session cookie when authentication succeeds', async () => {
+      // Given: Service authenticates successfully
+      const sessionId = 'test-session-id'
+      const sessionData = {
+        session_id: sessionId,
+        session_token: 'test-token',
+        created_at: new Date().toISOString(),
+        expires_at: new Date(Date.now() + 3600000).toISOString()
+      }
+      authenticateWithCallback.mockResolvedValueOnce(sessionData)
+
+      // When: OAuth callback is processed
+      const response = await server.inject({
+        method: 'GET',
+        url: '/auth/callback?code=mock-auth-code&state=mock-state'
+      })
+
+      // Then: Session cookie is set (check for Set-Cookie header)
+      expect(response.headers['set-cookie']).toBeDefined()
+      expect(response.statusCode).toBe(statusCodes.redirect)
     })
   })
 })

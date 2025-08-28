@@ -1,6 +1,10 @@
 import { vi } from 'vitest'
 import { OAUTH_CONSTANTS } from '../common/constants/authentication-constants.js'
 import { buildAuthorizationUrl } from './azure-ad-url-builder.js'
+import {
+  validateAndGetAzureAdConfig,
+  buildAzureAdEndpointUrl
+} from './azure-ad-config.js'
 
 // Mock the azure-ad-config module
 vi.mock('./azure-ad-config.js', () => ({
@@ -9,16 +13,8 @@ vi.mock('./azure-ad-config.js', () => ({
 }))
 
 describe('#azure-ad-url-builder', () => {
-  let mockValidateAndGetAzureAdConfig, mockBuildAzureAdEndpointUrl
-
-  beforeEach(async () => {
+  beforeEach(() => {
     vi.clearAllMocks()
-
-    // Get the mocked functions
-    const { validateAndGetAzureAdConfig, buildAzureAdEndpointUrl } =
-      await import('./azure-ad-config.js')
-    mockValidateAndGetAzureAdConfig = validateAndGetAzureAdConfig
-    mockBuildAzureAdEndpointUrl = buildAzureAdEndpointUrl
   })
 
   describe('buildAuthorizationUrl', () => {
@@ -27,7 +23,7 @@ describe('#azure-ad-url-builder', () => {
       const codeChallenge = 'test-code-challenge-abc'
 
       // Mock the config validation and URL building
-      mockValidateAndGetAzureAdConfig.mockReturnValue({
+      validateAndGetAzureAdConfig.mockReturnValue({
         baseUrl: 'https://login.microsoftonline.com',
         clientId: 'test-client-id-456',
         redirectUri: 'https://example.com/auth/callback',
@@ -35,7 +31,7 @@ describe('#azure-ad-url-builder', () => {
         authorizeEndpoint: 'oauth2/v2.0/authorize'
       })
 
-      mockBuildAzureAdEndpointUrl.mockReturnValue(
+      buildAzureAdEndpointUrl.mockReturnValue(
         'https://login.microsoftonline.com/test-tenant-789/oauth2/v2.0/authorize'
       )
 
@@ -53,14 +49,14 @@ describe('#azure-ad-url-builder', () => {
           'code_challenge_method=S256'
       )
 
-      expect(mockValidateAndGetAzureAdConfig).toHaveBeenCalledWith([
+      expect(validateAndGetAzureAdConfig).toHaveBeenCalledWith([
         'baseUrl',
         'clientId',
         'redirectUri',
         'tenantId',
         'authorizeEndpoint'
       ])
-      expect(mockBuildAzureAdEndpointUrl).toHaveBeenCalledWith(
+      expect(buildAzureAdEndpointUrl).toHaveBeenCalledWith(
         'https://login.microsoftonline.com',
         'test-tenant-789',
         'oauth2/v2.0/authorize'
@@ -71,7 +67,7 @@ describe('#azure-ad-url-builder', () => {
       const state = 'state+with/special=chars'
       const codeChallenge = 'challenge&with#special'
 
-      mockValidateAndGetAzureAdConfig.mockReturnValue({
+      validateAndGetAzureAdConfig.mockReturnValue({
         baseUrl: 'https://auth.example.com',
         clientId: 'client&id',
         redirectUri: 'https://example.com/auth?callback=true',
@@ -79,7 +75,7 @@ describe('#azure-ad-url-builder', () => {
         authorizeEndpoint: 'auth'
       })
 
-      mockBuildAzureAdEndpointUrl.mockReturnValue(
+      buildAzureAdEndpointUrl.mockReturnValue(
         'https://auth.example.com/tenant/id/auth'
       )
 
@@ -95,7 +91,7 @@ describe('#azure-ad-url-builder', () => {
     })
 
     test('Should throw error when configuration validation fails', () => {
-      mockValidateAndGetAzureAdConfig.mockImplementation(() => {
+      validateAndGetAzureAdConfig.mockImplementation(() => {
         throw new Error(
           'Azure AD configuration is incomplete. Missing: clientId'
         )
@@ -107,7 +103,7 @@ describe('#azure-ad-url-builder', () => {
     })
 
     test('Should use correct OAuth constants', () => {
-      mockValidateAndGetAzureAdConfig.mockReturnValue({
+      validateAndGetAzureAdConfig.mockReturnValue({
         baseUrl: 'https://auth.com',
         clientId: 'client',
         redirectUri: 'https://example.com/callback',
@@ -115,9 +111,7 @@ describe('#azure-ad-url-builder', () => {
         authorizeEndpoint: 'auth'
       })
 
-      mockBuildAzureAdEndpointUrl.mockReturnValue(
-        'https://auth.com/tenant/auth'
-      )
+      buildAzureAdEndpointUrl.mockReturnValue('https://auth.com/tenant/auth')
 
       const url = buildAuthorizationUrl('state', 'challenge')
 
